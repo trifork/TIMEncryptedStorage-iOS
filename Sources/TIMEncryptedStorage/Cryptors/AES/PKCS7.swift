@@ -2,7 +2,7 @@ import Foundation
 import CommonCrypto
 
 extension TIMESCryptor.AES {
-    struct PCKS7 {
+    struct PKCS7 {
         static func encrypt(key: Data, data: Data, iv: Data) throws -> Data {
             try crypt(key: key, input: data, iv: iv, operation: kCCEncrypt)
         }
