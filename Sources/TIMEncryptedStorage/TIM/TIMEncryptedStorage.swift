@@ -17,11 +17,16 @@ public final class TIMEncryptedStorage {
 
     private init() { }
 
+    /// Defines the encryption algorithm used by the framework.
+    /// It is recommended to use `.aesGcm` when running on iOS 13 or newer.
+    private (set) static var encryptionMethod: TIMESEncryptionMethod?
 
     /// Configures the key service. This has to be called before you call any other function in this class.
     /// - Parameter keyServiceConfiguration: The configuration
-    public static func configure(keyServiceConfiguration: TIMKeyServiceConfiguration) {
+    /// - Parameter encryptionMethod: The encryption method. It's recommended to use `.aesGcm` when running on iOS 13 or newer.
+    public static func configure(keyServiceConfiguration: TIMKeyServiceConfiguration, encryptionMethod: TIMESEncryptionMethod) {
         TIMKeyService.configure(keyServiceConfiguration)
+        Self.encryptionMethod = encryptionMethod
     }
 
 
@@ -94,27 +99,42 @@ public final class TIMEncryptedStorage {
     }
 
     private static func encryptAndStoreInKeychain(id: StoreID, data: Data, keyModel: TIMKeyModel) -> Result<Void, TIMEncryptedStorageError> {
-        guard let encryptedData = keyModel.encrypt(data: data) else {
-            return .failure(.failedToEncryptData)
+        let result: Result<Void, TIMEncryptedStorageError>
+        do {
+            let encryptedData = try keyModel.encrypt(data: data)
+            let success = TIMKeychain.store(data: encryptedData, item: TIMKeychainStoreItem(id: id))
+            if success {
+                result = .success(())
+            } else {
+                result = .failure(.failedToStoreInKeychain)
+            }
         }
-        let success = TIMKeychain.store(data: encryptedData, item: TIMKeychainStoreItem(id: id))
-        if success {
-            return .success(())
-        } else {
-            return .failure(.failedToStoreInKeychain)
+        catch let error as TIMEncryptedStorageError {
+            result = .failure(error)
         }
+        catch {
+            result = .failure(.failedToEncryptData)
+        }
+        return result
     }
 
     private static func loadFromKeychainAndDecrypt(id: StoreID, keyModel: TIMKeyModel) -> Result<Data, TIMEncryptedStorageError> {
+        let result: Result<Data, TIMEncryptedStorageError>
         if let encryptedData = TIMKeychain.get(item: TIMKeychainStoreItem(id: id)) {
-            if let decryptedData = keyModel.decrypt(data: encryptedData) {
-                return .success(decryptedData)
-            } else {
-                return .failure(.failedToDecryptData)
+            do {
+                let decryptedData = try keyModel.decrypt(data: encryptedData)
+                result = .success(decryptedData)
+            }
+            catch let error as TIMEncryptedStorageError {
+                result = .failure(error)
+            }
+            catch {
+                result = .failure(.failedToDecryptData)
             }
         } else {
-            return .failure(.failedToLoadDataInKeychain)
+            result = .failure(.failedToLoadDataInKeychain)
         }
+        return result
     }
 }
 

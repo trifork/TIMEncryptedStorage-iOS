@@ -31,9 +31,5 @@ final class KeychainStoreItemTests: XCTestCase {
     }
 
     // Keychain cannot be tested due to missing entitlements, when running tests 🤯
-
-    static var allTests = [
-        ("testKeychainStoreItem", testKeychainStoreItem),
-    ]
 }
 
