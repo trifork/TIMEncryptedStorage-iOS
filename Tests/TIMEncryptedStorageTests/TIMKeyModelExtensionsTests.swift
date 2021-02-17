@@ -2,7 +2,7 @@ import XCTest
 @testable import TIMEncryptedStorage
 
 final class TIMKeyModelExtensionsTests: XCTestCase {
-    
+
     @available(iOS 13, *)
     func testEncryptDecryptGCMConfig() {
         TIMEncryptedStorage.configure(
@@ -15,10 +15,10 @@ final class TIMKeyModelExtensionsTests: XCTestCase {
         assertModel(model, originalData: myData)
     }
 
-    func testEncryptDecryptPKCS7Config() {
+    func testEncryptDecryptCBCConfig() {
         TIMEncryptedStorage.configure(
             keyServiceConfiguration: TIMKeyServiceConfiguration(realmBaseUrl: "", version: .v1),
-            encryptionMethod: .aesPkcs7
+            encryptionMethod: .aesCbc
         )
         let key = "TWJRZVRoV21acTR0Nnc5eg=="
         let model = TIMKeyModel(keyId: "id", key: key, longSecret: nil)

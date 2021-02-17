@@ -13,9 +13,9 @@ extension TIMKeyModel {
 
         let encrypted: Data
         switch TIMEncryptedStorage.encryptionMethod {
-        case .aesPkcs7:
+        case .aesCbc:
             let iv = IVGenerator.randomIv()
-            let encryptedData = try TIMESCryptor.AES.PKCS7.encrypt(key: keyRaw, data: data, iv: iv)
+            let encryptedData = try TIMESCryptor.AES.CBC.encrypt(key: keyRaw, data: data, iv: iv)
             var combined = iv
             combined.append(encryptedData)
             encrypted = combined
@@ -43,10 +43,10 @@ extension TIMKeyModel {
 
         let decrypted: Data
         switch TIMEncryptedStorage.encryptionMethod {
-        case .aesPkcs7:
+        case .aesCbc:
             let iv = data.prefix(IVGenerator.ivSize)
             let encryptedData = data.suffix(from: IVGenerator.ivSize)
-            decrypted = try TIMESCryptor.AES.PKCS7.decrypt(key: keyRaw, data: encryptedData, iv: iv)
+            decrypted = try TIMESCryptor.AES.CBC.decrypt(key: keyRaw, data: encryptedData, iv: iv)
         default:
             if #available(iOS 13, *) {
                 if TIMEncryptedStorage.encryptionMethod == .aesGcm {

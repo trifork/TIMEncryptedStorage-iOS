@@ -30,18 +30,18 @@ final class TIMCryptorTests: XCTestCase {
         XCTAssertEqual(decryptedData, decryptedData3)
     }
 
-    func testAESPKCS7() {
-        let encryptedData = try! TIMESCryptor.AES.PKCS7.encrypt(key: key, data: data, iv: iv)
-        let encryptedData2 = try! TIMESCryptor.AES.PKCS7.encrypt(key: key, data: data, iv: iv2)
-        let encryptedData3 = try! TIMESCryptor.AES.PKCS7.encrypt(key: key2, data: data, iv: iv)
+    func testAESCBC() {
+        let encryptedData = try! TIMESCryptor.AES.CBC.encrypt(key: key, data: data, iv: iv)
+        let encryptedData2 = try! TIMESCryptor.AES.CBC.encrypt(key: key, data: data, iv: iv2)
+        let encryptedData3 = try! TIMESCryptor.AES.CBC.encrypt(key: key2, data: data, iv: iv)
         XCTAssertNotEqual(data, encryptedData)
         XCTAssertNotEqual(data, encryptedData2)
         XCTAssertNotEqual(encryptedData, encryptedData2) // Different IVs!
         XCTAssertNotEqual(encryptedData, encryptedData3) // Different keys!
 
-        let decryptedData = try! TIMESCryptor.AES.PKCS7.decrypt(key: key, data: encryptedData, iv: iv)
-        let decryptedData2 = try! TIMESCryptor.AES.PKCS7.decrypt(key: key, data: encryptedData2, iv: iv2)
-        let decryptedData3 = try! TIMESCryptor.AES.PKCS7.decrypt(key: key2, data: encryptedData3, iv: iv)
+        let decryptedData = try! TIMESCryptor.AES.CBC.decrypt(key: key, data: encryptedData, iv: iv)
+        let decryptedData2 = try! TIMESCryptor.AES.CBC.decrypt(key: key, data: encryptedData2, iv: iv2)
+        let decryptedData3 = try! TIMESCryptor.AES.CBC.decrypt(key: key2, data: encryptedData3, iv: iv)
         XCTAssertNotEqual(encryptedData, decryptedData)
         XCTAssertNotEqual(encryptedData2, decryptedData2)
         XCTAssertEqual(data, decryptedData)
