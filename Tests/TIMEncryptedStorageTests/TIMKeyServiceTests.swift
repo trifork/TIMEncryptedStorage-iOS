@@ -64,12 +64,5 @@ final class TIMKeyServiceTests: XCTestCase {
     }
 
     // Keychain cannot be tested due to missing entitlements, when running tests 🤯
-
-    static var allTests = [
-        ("testConfigurationNotSet", testConfigurationNotSet),
-        ("testValidConfigurationSet", testValidConfigurationSet),
-        ("testInvalidConfigureSet", testInvalidConfigureSet),
-        ("testKeyServiceUrl", testKeyServiceUrl),
-    ]
 }
 

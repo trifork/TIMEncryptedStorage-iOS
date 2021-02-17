@@ -6,6 +6,8 @@ public enum TIMEncryptedStorageError: Error, LocalizedError {
     // MARK: - Encryption errors
     case failedToEncryptData
     case failedToDecryptData
+    case invalidEncryptionMethod
+    case invalidEncryptionKey
 
     // MARK: - Default store / get
     case failedToStoreInKeychain
@@ -35,6 +37,10 @@ public enum TIMEncryptedStorageError: Error, LocalizedError {
             return "Something went wrong, while loading the longSecret from keychain (with biometric protection)"
         case .keyServiceFailed(let error):
             return "The KeyService failed with error: \(error)"
+        case .invalidEncryptionMethod:
+            return "The encryption method is invalid. Did you remember to call the configure method?"
+        case .invalidEncryptionKey:
+            return "The encryption key is invalid."
         }
     }
 }
@@ -91,7 +97,7 @@ func mapKeyServerError(withCode code: Int, errorDescription: String? = nil) -> T
     case -1009: return .potentiallyNoInternet
     case let code where code < 0: return .badInternet
     case 401: return .badPassword
-    case 204, 403: return .keyLocked // TEMP 204, until verified that this is a keyLocked
+    case 204, 403: return .keyLocked
     case 404: return .keyMissing
     case 500: return .unableToCreateKey
     default: return .unknown(code, errorDescription)
