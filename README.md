@@ -24,7 +24,7 @@ let config = TIMKeyServiceConfiguration(
     realmBaseUrl: "<TIM Keyservice URL>",
     version: .v1
 )
-TIMEncryptedStorage.configure(keyServiceConfiguration: config)
+TIMEncryptedStorage.configure(keyServiceConfiguration: config, encryptionMethod: .aesGcm)
 ```
 
 ## Common use cases

@@ -4,6 +4,8 @@ import CryptoKit
 
 extension TIMKeyModel {
 
+    /// Encrypts data, using the data in the receiver model
+    /// Note that the returned data is a combined set of nonce and encrypted data.
     func encrypt(data: Data) throws -> Data {
         guard let keyRaw = keyRaw else {
             throw TIMEncryptedStorageError.invalidEncryptionKey
@@ -32,6 +34,8 @@ extension TIMKeyModel {
         return encrypted
     }
 
+    /// Decrypts data using the data in the receiver mode.
+    /// Note that this method expects a combined set of data, with nonce and encrypted data.
     func decrypt(data: Data) throws -> Data {
         guard let keyRaw = keyRaw else {
             throw TIMEncryptedStorageError.invalidEncryptionKey
@@ -58,7 +62,7 @@ extension TIMKeyModel {
         return decrypted
     }
 
-    /// decodes the key from base64 into raw data.
+    /// Decodes the key from Base64 into raw data, since the KeyService model contains base64 encoded keys.
     private var keyRaw: Data? {
         Data(base64Encoded: key, options: .ignoreUnknownCharacters)
     }
