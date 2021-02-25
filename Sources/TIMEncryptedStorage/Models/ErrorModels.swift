@@ -9,16 +9,14 @@ public enum TIMEncryptedStorageError: Error, LocalizedError {
     case invalidEncryptionMethod
     case invalidEncryptionKey
 
-    // MARK: - Default store / get
-    case failedToStoreInKeychain
-    case failedToLoadDataInKeychain
-
-    // MARK: - Biometric longSecret store / get
-    case failedToStoreLongSecretViaBiometric
-    case failedToLoadLongSecretViaBiometric
-
     // MARK: - KeySever errors
     case keyServiceFailed(TIMKeyServiceError)
+
+    // MARK: - Keychain errors
+    case keychainFailed(TIMKeychainError)
+
+    // MARK: - Unexpected data from Keychain
+    case unexpectedData
 
 
     public var errorDescription: String? {
@@ -27,20 +25,16 @@ public enum TIMEncryptedStorageError: Error, LocalizedError {
             return "Failed to encrypt data with specified key."
         case .failedToDecryptData:
             return "Failed to decrypt data with specified key."
-        case .failedToStoreInKeychain:
-            return "Something went wrong, while saving data to keychain."
-        case .failedToLoadDataInKeychain:
-            return "Something went wrong, while loading data from keychain."
-        case .failedToStoreLongSecretViaBiometric:
-            return "Something went wrong, while saving the longSecret to keychain (with biometric protection)"
-        case .failedToLoadLongSecretViaBiometric:
-            return "Something went wrong, while loading the longSecret from keychain (with biometric protection)"
-        case .keyServiceFailed(let error):
-            return "The KeyService failed with error: \(error)"
         case .invalidEncryptionMethod:
             return "The encryption method is invalid. Did you remember to call the configure method?"
         case .invalidEncryptionKey:
             return "The encryption key is invalid."
+        case .keyServiceFailed(let error):
+            return "The KeyService failed with error: \(error)"
+        case .keychainFailed(let error):
+            return "The Keychain failed with error: \(error)"
+        case .unexpectedData:
+            return "The Keychain loaded unexpected data. Failed to use the data."
         }
     }
 }
@@ -79,6 +73,28 @@ public enum TIMKeyServiceError: Error, Equatable, LocalizedError {
             return "The key is an old version, which does not have longSecret for key results. You have to store the longSecret locally and use that instead of the secret."
         case .unknown(let code, let str):
             return "Unknown error [\(code?.description ?? "N/A")]: \(str ?? "N/A")"
+        }
+    }
+}
+
+public enum TIMKeychainError : Error, LocalizedError {
+    /// Failed to store data
+    case failedToStoreData
+
+    /// Failed to load data
+    case failedToLoadData
+
+    /// Authentication failed for data retrieve (e.g. TouchID/FaceID)
+    case authenticationFailedForData
+
+    public var errorDescription: String? {
+        switch self {
+        case .authenticationFailedForData:
+            return "The authentication failed for data, e.g. the user failed to unlock using biometric ID."
+        case .failedToLoadData:
+            return "Failed to load data from keychain."
+        case .failedToStoreData:
+            return "Failed to store data in keychain."
         }
     }
 }

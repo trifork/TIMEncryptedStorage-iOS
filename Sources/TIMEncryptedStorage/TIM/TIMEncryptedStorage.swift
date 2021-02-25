@@ -72,12 +72,8 @@ public final class TIMEncryptedStorage {
 
     private static func storeLongSecret(keyId: String, longSecret: String) -> Result<Void, TIMEncryptedStorageError> {
         let keychainKey = longSecretKeychainId(keyId: keyId)
-        let success = TIMKeychain.storeBiometricProtected(data: Data(longSecret.utf8), item: TIMKeychainStoreItem(id: keychainKey))
-        if success {
-            return .success(())
-        } else {
-            return .failure(.failedToStoreLongSecretViaBiometric)
-        }
+        let result = TIMKeychain.storeBiometricProtected(data: Data(longSecret.utf8), item: TIMKeychainStoreItem(id: keychainKey))
+        return result.mapError({ TIMEncryptedStorageError.keychainFailed($0) })
     }
 
     private static func handleKeyServerResultAndEncryptData(keyServerResult: Result<TIMKeyModel, TIMKeyServiceError>, id: StoreID, data: Data) -> Result<Void, TIMEncryptedStorageError> {
@@ -102,12 +98,8 @@ public final class TIMEncryptedStorage {
         let result: Result<Void, TIMEncryptedStorageError>
         do {
             let encryptedData = try keyModel.encrypt(data: data)
-            let success = TIMKeychain.store(data: encryptedData, item: TIMKeychainStoreItem(id: id))
-            if success {
-                result = .success(())
-            } else {
-                result = .failure(.failedToStoreInKeychain)
-            }
+            let storeResult = TIMKeychain.store(data: encryptedData, item: TIMKeychainStoreItem(id: id))
+            result = storeResult.mapError({ TIMEncryptedStorageError.keychainFailed($0) })
         }
         catch let error as TIMEncryptedStorageError {
             result = .failure(error)
@@ -120,7 +112,10 @@ public final class TIMEncryptedStorage {
 
     private static func loadFromKeychainAndDecrypt(id: StoreID, keyModel: TIMKeyModel) -> Result<Data, TIMEncryptedStorageError> {
         let result: Result<Data, TIMEncryptedStorageError>
-        if let encryptedData = TIMKeychain.get(item: TIMKeychainStoreItem(id: id)) {
+        let loadResult: Result<Data, TIMKeychainError> = TIMKeychain.get(item: TIMKeychainStoreItem(id: id))
+
+        switch loadResult {
+        case .success(let encryptedData):
             do {
                 let decryptedData = try keyModel.decrypt(data: encryptedData)
                 result = .success(decryptedData)
@@ -131,9 +126,10 @@ public final class TIMEncryptedStorage {
             catch {
                 result = .failure(.failedToDecryptData)
             }
-        } else {
-            result = .failure(.failedToLoadDataInKeychain)
+        case .failure(let keychainError):
+            result = .failure(.keychainFailed(keychainError))
         }
+
         return result
     }
 }
@@ -293,11 +289,17 @@ public extension TIMEncryptedStorage {
         // 3. Return result of store function
 
         let keychainKey = longSecretKeychainId(keyId: keyId)
-        if  let longSecretData = TIMKeychain.getBiometricProtected(item: TIMKeychainStoreItem(id: keychainKey)),
-            let longSecret = String(data: longSecretData, encoding: .utf8) {
-            store(id: id, data: data, keyId: keyId, longSecret: longSecret, completion: completion)
-        } else {
-            completion(.failure(.failedToLoadLongSecretViaBiometric))
+        let loadResult = TIMKeychain.getBiometricProtected(item: TIMKeychainStoreItem(id: keychainKey))
+
+        switch loadResult {
+        case .failure(let keychainError):
+            completion(.failure(.keychainFailed(keychainError)))
+        case .success(let longSecretData):
+            if let longSecret = String(data: longSecretData, encoding: .utf8) {
+                store(id: id, data: data, keyId: keyId, longSecret: longSecret, completion: completion)
+            } else {
+                completion(.failure(.unexpectedData))
+            }
         }
     }
 
@@ -365,14 +367,20 @@ public extension TIMEncryptedStorage {
         // 4. Decrypt data with encryption key
         // 5. Return decrypted data + longSecret
         let keychainKey = longSecretKeychainId(keyId: keyId)
-        if let longSecretData = TIMKeychain.getBiometricProtected(item: TIMKeychainStoreItem(id: keychainKey)),
-           let longSecret = String(data: longSecretData, encoding: .utf8) {
-            TIMKeyService.getKeyViaLongSecret(longSecret: longSecret, keyId: keyId) { (keyServerResult) in
-                let result = handleKeyServerResultAndDecryptData(keyServerResult: keyServerResult, id: id)
-                completion(result.map({ TIMESBiometricLoadResult(data: $0, longSecret: longSecret) }))
+        let longSecretResult = TIMKeychain.getBiometricProtected(item: TIMKeychainStoreItem(id: keychainKey))
+
+        switch longSecretResult {
+        case .success(let longSecretData):
+            if let longSecret = String(data: longSecretData, encoding: .utf8) {
+                TIMKeyService.getKeyViaLongSecret(longSecret: longSecret, keyId: keyId) { (keyServerResult) in
+                    let result = handleKeyServerResultAndDecryptData(keyServerResult: keyServerResult, id: id)
+                    completion(result.map({ TIMESBiometricLoadResult(data: $0, longSecret: longSecret) }))
+                }
+            } else {
+                completion(.failure(.unexpectedData))
             }
-        } else {
-            completion(.failure(.failedToLoadLongSecretViaBiometric))
+        case .failure(let keychainError):
+            completion(.failure(.keychainFailed(keychainError)))
         }
     }
 
