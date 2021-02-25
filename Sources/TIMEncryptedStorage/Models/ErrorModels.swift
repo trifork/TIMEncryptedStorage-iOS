@@ -90,7 +90,7 @@ public enum TIMKeychainError : Error, LocalizedError {
     public var errorDescription: String? {
         switch self {
         case .authenticationFailedForData:
-            return "The authentication failed for data, e.g. the user failed to unlock using biometric ID."
+            return "The authentication failed for data, e.g. the user failed to unlock or cancelled the biometric ID prompt."
         case .failedToLoadData:
             return "Failed to load data from keychain."
         case .failedToStoreData:

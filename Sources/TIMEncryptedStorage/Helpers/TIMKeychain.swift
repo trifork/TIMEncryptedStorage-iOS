@@ -156,7 +156,7 @@ public final class TIMKeychain {
     static func mapLoadStatusToResult(_ status: OSStatus, data: AnyObject?) -> Result<Data, TIMKeychainError> {
         let result: Result<Data, TIMKeychainError>
         switch status {
-        case errSecAuthFailed:
+        case errSecAuthFailed, errSecUserCanceled:
             result = Result.failure(.authenticationFailedForData)
         case noErr:
             if let optData = (data as? Data) {
