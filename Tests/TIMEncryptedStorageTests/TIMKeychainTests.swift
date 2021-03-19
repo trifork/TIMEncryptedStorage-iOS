@@ -2,6 +2,8 @@ import XCTest
 @testable import TIMEncryptedStorage
 
 final class KeychainStoreItemTests: XCTestCase {
+    let keychain = TIMKeychain()
+
     func testKeychainStoreItem() {
         let storeId: StoreID = "testStoreAndGet"
         var item = TIMKeychainStoreItem(id: storeId)
@@ -31,24 +33,24 @@ final class KeychainStoreItemTests: XCTestCase {
     }
 
     func testStoreStatusMapping() {
-        let result = TIMKeychain.mapStoreStatusToResult(noErr)
+        let result = keychain.mapStoreStatusToResult(noErr)
         assertResult(result, expectedDataType: Void.self, expectedError: nil)
 
-        let result2 = TIMKeychain.mapStoreStatusToResult(errSecAuthFailed)
+        let result2 = keychain.mapStoreStatusToResult(errSecAuthFailed)
         assertResult(result2, expectedDataType: nil, expectedError: .authenticationFailedForData)
 
-        let result3 = TIMKeychain.mapStoreStatusToResult(errSecDeviceFailed)
+        let result3 = keychain.mapStoreStatusToResult(errSecDeviceFailed)
         assertResult(result3, expectedDataType: nil, expectedError: .failedToStoreData)
     }
 
     func testLoadStatusMapping() {
-        let result = TIMKeychain.mapLoadStatusToResult(noErr, data: Data() as AnyObject)
+        let result = keychain.mapLoadStatusToResult(noErr, data: Data() as AnyObject)
         assertResult(result, expectedDataType: Data.self, expectedError: nil)
 
-        let result2 = TIMKeychain.mapLoadStatusToResult(errSecAuthFailed, data: nil)
+        let result2 = keychain.mapLoadStatusToResult(errSecAuthFailed, data: nil)
         assertResult(result2, expectedDataType: nil, expectedError: .authenticationFailedForData)
 
-        let result3 = TIMKeychain.mapLoadStatusToResult(errSecDeviceFailed, data: nil)
+        let result3 = keychain.mapLoadStatusToResult(errSecDeviceFailed, data: nil)
         assertResult(result3, expectedDataType: nil, expectedError: .failedToLoadData)
     }
 

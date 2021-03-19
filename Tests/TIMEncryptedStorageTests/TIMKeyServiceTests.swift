@@ -12,13 +12,15 @@ private var combineStore: Set<AnyCancellable> = Set()
 final class TIMKeyServiceTests: XCTestCase {
     private var createKeyModel: TIMKeyModel?
 
+    static var config = TIMKeyServiceConfiguration(
+        realmBaseUrl: "https://oidc-test.hosted.trifork.com/auth/realms/dev",
+        version: .v1
+    )
+
+    private let keyService: TIMKeyServiceImpl = TIMKeyServiceImpl(configuration: config)
+
     override class func setUp() {
         super.setUp()
-        let config = TIMKeyServiceConfiguration(
-            realmBaseUrl: "https://oidc-test.hosted.trifork.com/auth/realms/dev",
-            version: .v1
-        )
-        TIMKeyService.configure(config)
     }
 
     override class func tearDown() {
@@ -31,16 +33,11 @@ final class TIMKeyServiceTests: XCTestCase {
     }
 
     func testConfigurationNotSet() {
-        XCTAssertFalse(TIMKeyService.verifyConfiguration(nil))
+        XCTAssertFalse(keyService.verifyConfiguration(nil))
     }
 
     func testValidConfigurationSet() {
-        let config = TIMKeyServiceConfiguration(
-            realmBaseUrl: "https://oidc-test.hosted.trifork.com/auth/realms/my-realm",
-            version: .v1
-        )
-        TIMKeyService.configure(config)
-        XCTAssertTrue(TIMKeyService.verifyConfiguration(config))
+        XCTAssertTrue(keyService.verifyConfiguration(Self.config))
     }
 
     func testInvalidConfigureSet() {
@@ -48,21 +45,16 @@ final class TIMKeyServiceTests: XCTestCase {
             realmBaseUrl: "INVALID URL",
             version: .v1
         )
-        XCTAssertFalse(TIMKeyService.verifyConfiguration(config))
+        XCTAssertFalse(keyService.verifyConfiguration(config))
     }
 
     func testKeyServiceUrl() {
-        let config = TIMKeyServiceConfiguration(
-            realmBaseUrl: "https://oidc-test.hosted.trifork.com/auth/realms/my-realm",
-            version: .v1
-        )
-        TIMKeyService.configure(config)
         XCTAssertEqual(
-            "https://oidc-test.hosted.trifork.com/auth/realms/my-realm/keyservice/v1/key",
-            TIMKeyService.keyServiceUrl(endpoint: .key).absoluteString
+            "https://oidc-test.hosted.trifork.com/auth/realms/dev/keyservice/v1/key",
+            keyService.keyServiceUrl(endpoint: .key).absoluteString
         )
     }
 
-    // Keychain cannot be tested due to missing entitlements, when running tests 🤯
+    // Methods accessing the Apple Keychain cannot be tested due to missing entitlements, when running tests 🤯
 }
 

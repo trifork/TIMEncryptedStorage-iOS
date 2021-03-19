@@ -1,45 +1,30 @@
 import Foundation
 
-/// Represents a item in the keychain with a given ID
-public struct TIMKeychainStoreItem {
+public protocol TIMSecureStore {
+    associatedtype SecureStoreItem: TIMSecureStoreItem
 
-    let id: String
-
-    private (set) var parameters: [String: Any]
-
-    /// Constructor
-    /// - Parameter id: Identifier for the object in the keychain
-    public init(id: String) {
-        self.id = id
-        self.parameters = [kSecAttrAccount as String: id,
-                           kSecClass as String: kSecClassGenericPassword]
-    }
-
-    mutating func addParameter(key: String, value: Any) {
-        parameters.updateValue(value, forKey: key)
-    }
-
-    mutating func enableUseAuthenticationUI(_ authenticationUI: CFString) {
-        addParameter(key: kSecUseAuthenticationUI as String, value: authenticationUI)
-    }
-
-    mutating func enableSafeAccessControl(_ safeAccessControl: SecAccessControl) {
-        addParameter(key: kSecAttrAccessControl as String, value: safeAccessControl)
-    }
+    func remove(item: SecureStoreItem)
+    func store(data: Data, item: SecureStoreItem) -> Result<Void, TIMKeychainError>
+    func storeBiometricProtected(data: Data, item: SecureStoreItem) -> Result<Void, TIMKeychainError>
+    func get(item: SecureStoreItem) -> Result<Data, TIMKeychainError>
+    func getBiometricProtected(item: SecureStoreItem) -> Result<Data, TIMKeychainError>
+    func hasValue(item: SecureStoreItem) -> Bool
+    func hasBiometricProtectedValue(item: SecureStoreItem) -> Bool
 }
-
-
 
 /// Keychain wrapper for Trifork Identity Manager.
 ///
 /// This wrapper is mainly for use internally in the TIMEncryptedStorage packages,
 /// but it might come in handy in rare cases.
-public final class TIMKeychain {
+public final class TIMKeychain : TIMSecureStore {
 
+    public init() {
+
+    }
 
     /// Removes KeychainStoreItem from the keychain.
     /// - Parameter item: The item to remove.
-    public static func remove(item: TIMKeychainStoreItem) {
+    public func remove(item: TIMKeychainStoreItem) {
         SecItemDelete(item.parameters as CFDictionary)
     }
 
@@ -49,7 +34,7 @@ public final class TIMKeychain {
     ///   - data: Data to save.
     ///   - item: The item to identify the data.
     /// - Returns: Result indicating whether it was a success or not.
-    public static func store(data: Data, item: TIMKeychainStoreItem) -> Result<Void, TIMKeychainError> {
+    public func store(data: Data, item: TIMKeychainStoreItem) -> Result<Void, TIMKeychainError> {
         remove(item: item) //Remove before adding to avoid override errors
         var mutableParameters = item.parameters
         mutableParameters.updateValue(data, forKey: kSecValueData as String)
@@ -63,7 +48,7 @@ public final class TIMKeychain {
     ///   - data: Data to save.
     ///   - item: The item to identify the data.
     /// - Returns: Result indicating whether it was a success or not.
-    public static func storeBiometricProtected(data: Data, item: TIMKeychainStoreItem) -> Result<Void, TIMKeychainError> {
+    public func storeBiometricProtected(data: Data, item: TIMKeychainStoreItem) -> Result<Void, TIMKeychainError> {
         let biometricFlag: SecAccessControlCreateFlags
         if #available(iOS 11.3, *) {
             biometricFlag = .biometryAny
@@ -93,7 +78,7 @@ public final class TIMKeychain {
     /// Gets data from the keychain.
     /// - Parameter item: The item that identifies the data (and which is was saved with)
     /// - Returns: If there is data for the specified item, it will return the Data object, otherwise a failing result with a matching error
-    public static func get(item: TIMKeychainStoreItem) -> Result<Data, TIMKeychainError> {
+    public func get(item: TIMKeychainStoreItem) -> Result<Data, TIMKeychainError> {
         var dataResult: AnyObject?
         var mutableParameters = item.parameters
         mutableParameters.updateValue(kSecMatchLimitOne, forKey: kSecMatchLimit as String)
@@ -111,7 +96,7 @@ public final class TIMKeychain {
     /// Gets biometric protected data from the keychain - this will prompt the user for biometric verification.
     /// - Parameter item: The item that identifies the data (and which is was saved with)
     /// - Returns: If there is data for the specified item, it will return the Data object, otherwise `nil`
-    public static func getBiometricProtected(item: TIMKeychainStoreItem) -> Result<Data, TIMKeychainError> {
+    public func getBiometricProtected(item: TIMKeychainStoreItem) -> Result<Data, TIMKeychainError> {
         var mutableItem = item
         mutableItem.enableUseAuthenticationUI(kSecUseAuthenticationUIAllow)
         return get(item: mutableItem)
@@ -121,7 +106,7 @@ public final class TIMKeychain {
     /// Checks whether an item exists in the keychain or not.
     /// - Parameter item: The item that identifies the data (and which is was saved with)
     /// - Returns: `true` if the item exists, otherwise `false`
-    public static func hasValue(item: TIMKeychainStoreItem) -> Bool {
+    public func hasValue(item: TIMKeychainStoreItem) -> Bool {
         var result: AnyObject?
         // Search
         let status = withUnsafeMutablePointer(to: &result) { pointer in
@@ -134,13 +119,13 @@ public final class TIMKeychain {
     /// Checks whether an item exists with biometric protection in the keychain or not.
     /// - Parameter item: The item that identifies the data (and which is was saved with)
     /// - Returns: `true` if the item exists, otherwise `false`
-    public static func hasBiometricProtectedValue(item: TIMKeychainStoreItem) -> Bool {
+    public func hasBiometricProtectedValue(item: TIMKeychainStoreItem) -> Bool {
         var mutableItem = item
         mutableItem.enableUseAuthenticationUI(kSecUseAuthenticationUIFail)
         return hasValue(item: mutableItem)
     }
 
-    static func mapStoreStatusToResult(_ status: OSStatus) -> Result<Void, TIMKeychainError> {
+    func mapStoreStatusToResult(_ status: OSStatus) -> Result<Void, TIMKeychainError> {
         let result: Result<Void, TIMKeychainError>
         switch status {
         case errSecAuthFailed:
@@ -153,7 +138,7 @@ public final class TIMKeychain {
         return result
     }
 
-    static func mapLoadStatusToResult(_ status: OSStatus, data: AnyObject?) -> Result<Data, TIMKeychainError> {
+    func mapLoadStatusToResult(_ status: OSStatus, data: AnyObject?) -> Result<Data, TIMKeychainError> {
         let result: Result<Data, TIMKeychainError>
         switch status {
         case errSecAuthFailed, errSecUserCanceled:
