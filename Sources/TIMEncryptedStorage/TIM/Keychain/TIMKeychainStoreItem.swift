@@ -1,12 +1,7 @@
 import Foundation
 
-public protocol TIMSecureStoreItem {
-    var id: String { get }
-
-    init(id: String)
-}
-
-/// Represents a item in the keychain with a given ID
+/// Represents an item in the keychain with a given ID
+/// The keychain operations are based on a set of parameters, why this item type uses a parameter based approach.
 public struct TIMKeychainStoreItem: TIMSecureStoreItem {
 
     public let id: String

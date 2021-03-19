@@ -16,12 +16,15 @@ public typealias StoreID = String
 public final class TIMEncryptedStorage<SecureStore: TIMSecureStore> {
 
     private let secureStore: SecureStore
-    private let keyService: TIMKeyService
+    private let keyService: TIMKeyServiceProtocol
     private let encryptionMethod: TIMESEncryptionMethod
 
-    /// Defines the encryption algorithm used by the framework.
-    /// It is recommended to use `.aesGcm` when running on iOS 13 or newer.
-    public init(secureStore: SecureStore, keyService: TIMKeyService, encryptionMethod: TIMESEncryptionMethod) {
+    /// Constructor for `TIMEncryptedStorage`.
+    /// - Parameters:
+    ///   - secureStore: The secure storage implementation. `TIMKeychain` is recommended.
+    ///   - keyService: The key service implementation to use. `TIMKeyService` is recommended.
+    ///   - encryptionMethod: Defines the encryption algorithm used by the framework. `.aesGcm` is recommended for iOS 13 or newer.
+    public init(secureStore: SecureStore, keyService: TIMKeyServiceProtocol, encryptionMethod: TIMESEncryptionMethod) {
         self.secureStore = secureStore
         self.encryptionMethod = encryptionMethod
         self.keyService = keyService
@@ -70,7 +73,7 @@ public final class TIMEncryptedStorage<SecureStore: TIMSecureStore> {
     private func storeLongSecret(keyId: String, longSecret: String) -> Result<Void, TIMEncryptedStorageError> {
         let keychainKey = longSecretKeychainId(keyId: keyId)
         let result = secureStore.storeBiometricProtected(data: Data(longSecret.utf8), item: SecureStore.SecureStoreItem(id: keychainKey))
-        return result.mapError({ TIMEncryptedStorageError.keychainFailed($0) })
+        return result.mapError({ TIMEncryptedStorageError.secureStorageFailed($0) })
     }
 
     private func handleKeyServerResultAndEncryptData(keyServerResult: Result<TIMKeyModel, TIMKeyServiceError>, id: StoreID, data: Data) -> Result<Void, TIMEncryptedStorageError> {
@@ -96,7 +99,7 @@ public final class TIMEncryptedStorage<SecureStore: TIMSecureStore> {
         do {
             let encryptedData = try keyModel.encrypt(data: data, encryptionMethod: encryptionMethod)
             let storeResult = secureStore.store(data: encryptedData, item: SecureStore.SecureStoreItem(id: id))
-            result = storeResult.mapError({ TIMEncryptedStorageError.keychainFailed($0) })
+            result = storeResult.mapError({ TIMEncryptedStorageError.secureStorageFailed($0) })
         }
         catch let error as TIMEncryptedStorageError {
             result = .failure(error)
@@ -109,7 +112,7 @@ public final class TIMEncryptedStorage<SecureStore: TIMSecureStore> {
 
     private func loadFromKeychainAndDecrypt(id: StoreID, keyModel: TIMKeyModel) -> Result<Data, TIMEncryptedStorageError> {
         let result: Result<Data, TIMEncryptedStorageError>
-        let loadResult: Result<Data, TIMKeychainError> = secureStore.get(item: SecureStore.SecureStoreItem(id: id))
+        let loadResult: Result<Data, TIMSecureStorageError> = secureStore.get(item: SecureStore.SecureStoreItem(id: id))
 
         switch loadResult {
         case .success(let encryptedData):
@@ -124,7 +127,7 @@ public final class TIMEncryptedStorage<SecureStore: TIMSecureStore> {
                 result = .failure(.failedToDecryptData)
             }
         case .failure(let keychainError):
-            result = .failure(.keychainFailed(keychainError))
+            result = .failure(.secureStorageFailed(keychainError))
         }
 
         return result
@@ -289,7 +292,7 @@ public extension TIMEncryptedStorage {
 
         switch loadResult {
         case .failure(let keychainError):
-            completion(.failure(.keychainFailed(keychainError)))
+            completion(.failure(.secureStorageFailed(keychainError)))
         case .success(let longSecretData):
             if let longSecret = String(data: longSecretData, encoding: .utf8) {
                 store(id: id, data: data, keyId: keyId, longSecret: longSecret, completion: completion)
@@ -376,7 +379,7 @@ public extension TIMEncryptedStorage {
                 completion(.failure(.unexpectedData))
             }
         case .failure(let keychainError):
-            completion(.failure(.keychainFailed(keychainError)))
+            completion(.failure(.secureStorageFailed(keychainError)))
         }
     }
 

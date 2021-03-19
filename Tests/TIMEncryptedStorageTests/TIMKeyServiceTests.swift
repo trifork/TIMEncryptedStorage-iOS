@@ -17,7 +17,7 @@ final class TIMKeyServiceTests: XCTestCase {
         version: .v1
     )
 
-    private let keyService: TIMKeyServiceImpl = TIMKeyServiceImpl(configuration: config)
+    private let keyService: TIMKeyService = TIMKeyService(configuration: config)
 
     override class func setUp() {
         super.setUp()
@@ -30,10 +30,6 @@ final class TIMKeyServiceTests: XCTestCase {
         }
         #endif
         super.tearDown()
-    }
-
-    func testConfigurationNotSet() {
-        XCTAssertFalse(keyService.verifyConfiguration(nil))
     }
 
     func testValidConfigurationSet() {

@@ -54,7 +54,7 @@ final class KeychainStoreItemTests: XCTestCase {
         assertResult(result3, expectedDataType: nil, expectedError: .failedToLoadData)
     }
 
-    private func assertResult<T>(_ result: Result<T, TIMKeychainError>, expectedDataType: T.Type?, expectedError: TIMKeychainError?) {
+    private func assertResult<T>(_ result: Result<T, TIMSecureStorageError>, expectedDataType: T.Type?, expectedError: TIMSecureStorageError?) {
         switch result {
         case .success(let dataType):
             XCTAssertTrue(type(of: dataType) == expectedDataType)
