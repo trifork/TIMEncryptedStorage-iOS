@@ -15,7 +15,9 @@ public typealias StorageID = String
 /// This class depends on the Trifork Identity Manager Key Service (`TIMKeyService`), which handles encryption keys.
 public final class TIMEncryptedStorage<SecureStorage: TIMSecureStorage> {
 
-    private let secureStorage: SecureStorage
+    /// The secure storage instance that was injected upon creation
+    public let secureStorage: SecureStorage
+
     private let keyService: TIMKeyServiceProtocol
     private let encryptionMethod: TIMESEncryptionMethod
 
