@@ -65,7 +65,7 @@ final class KeychainStoreItemTests: XCTestCase {
         }
     }
 
-    // Keychain cannot be tested due to missing entitlements, when running tests 🤯
+    // `TIMKeychain` cannot be tested due to missing entitlements, when running tests 🤯
 }
 
 
