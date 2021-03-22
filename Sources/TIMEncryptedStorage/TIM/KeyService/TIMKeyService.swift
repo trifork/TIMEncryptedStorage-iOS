@@ -24,14 +24,17 @@ enum TIMKeyServiceEndpoints: String {
 public final class TIMKeyService : TIMKeyServiceProtocol {
 
     /// The configuration of the key service
-    ///
-    /// - Parameter serverAddress: eg "https://someserver.com/auth/realms/myrealm/keyservice/v1/"
     private let configuration: TIMKeyServiceConfiguration
+
+    /// The `URLSession` to perform the network requests to the Trifork Identity Manager KeyService.
+    private let urlSession: URLSession
 
     /// Sets the configuration of the key service. This should be called before you call any other fuctions on this class.
     /// - Parameter configuration: The configuration.
-    public init(configuration: TIMKeyServiceConfiguration) {
+    /// - Parameter networkSession: The `URLSession` to perform the network requests to the Trifork Identity Manager KeyService. Default is `URLSession.shared`
+    public init(configuration: TIMKeyServiceConfiguration, urlSession: URLSession = .shared) {
         self.configuration = configuration
+        self.urlSession = urlSession
 
         guard verifyConfiguration(configuration) else {
             fatalError("TIMKeyService configuration is invalid!")
@@ -44,7 +47,7 @@ public final class TIMKeyService : TIMKeyServiceProtocol {
         request.addValue("application/json", forHTTPHeaderField: "Content-Type")
         request.httpBody = try? JSONEncoder().encode(parameters)
 
-        let task = URLSession.shared.dataTask(with: request) { (data, response, error) in
+        let task = urlSession.dataTask(with: request) { (data, response, error) in
             guard let response = response as? HTTPURLResponse else {
                 DispatchQueue.main.async {
                     completion(.failure(mapKeyServerError(error)))
