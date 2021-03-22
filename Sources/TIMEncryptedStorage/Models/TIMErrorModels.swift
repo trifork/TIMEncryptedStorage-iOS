@@ -99,16 +99,16 @@ public enum TIMSecureStorageError : Error, LocalizedError {
     }
 }
 
-func mapKeyServerError(_ error: Error?) -> TIMKeyServiceError {
+func mapKeyServiceError(_ error: Error?) -> TIMKeyServiceError {
     guard let err = error else {
         return .unknown(nil, nil)
     }
 
     let error = err as NSError
-    return mapKeyServerError(withCode: error.code, errorDescription: error.localizedDescription)
+    return mapKeyServiceError(withCode: error.code, errorDescription: error.localizedDescription)
 }
 
-func mapKeyServerError(withCode code: Int, errorDescription: String? = nil) -> TIMKeyServiceError {
+func mapKeyServiceError(withCode code: Int, errorDescription: String? = nil) -> TIMKeyServiceError {
     switch code {
     case -1009: return .potentiallyNoInternet
     case let code where code < 0: return .badInternet

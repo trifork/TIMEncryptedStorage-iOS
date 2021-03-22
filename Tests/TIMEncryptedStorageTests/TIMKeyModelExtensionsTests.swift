@@ -18,6 +18,23 @@ final class TIMKeyModelExtensionsTests: XCTestCase {
         assertModel(model, originalData: myData, encryptionMethod: .aesCbc)
     }
 
+    func testErrorHandlingForInvalidKey() {
+        let model = TIMKeyModel(keyId: "id", key: "123", longSecret: nil)
+        let myData = "My-test-data-to-encrypt-🔒".data(using: .utf8)!
+        do {
+            _ = try model.encrypt(data: myData, encryptionMethod: .aesCbc)
+        } catch let error as TIMEncryptedStorageError {
+            switch error {
+            case .invalidEncryptionKey:
+                break //All good!
+            default:
+                XCTFail("Error was supposed to be `.invalidEncryptionKey` but was \(error)")
+            }
+        } catch {
+            XCTFail("Unexpected error!")
+        }
+    }
+
     private func assertModel(_ model: TIMKeyModel, originalData: Data, encryptionMethod: TIMESEncryptionMethod) {
         let encryptedData = try! model.encrypt(data: originalData, encryptionMethod: encryptionMethod)
         XCTAssertNotEqual(originalData, encryptedData)
