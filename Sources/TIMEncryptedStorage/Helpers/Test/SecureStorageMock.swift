@@ -1,7 +1,6 @@
 import Foundation
-import TIMEncryptedStorage
 
-struct TestSecureStorageItem: TIMSecureStorageItem {
+struct SecureStorageMockItem: TIMSecureStorageItem {
     var id: String
     private (set) var isBioProtected: Bool = false
 
@@ -14,17 +13,17 @@ struct TestSecureStorageItem: TIMSecureStorageItem {
     }
 }
 
-final class TestSecureStorage : TIMSecureStorage {
+final class SecureStorageMock : TIMSecureStorage {
     private var bioProtectedData: [StorageID: Data] = [:]
     private var protectedData: [StorageID: Data] = [:]
 
-    func getBiometricProtected(item: TestSecureStorageItem) -> Result<Data, TIMSecureStorageError> {
+    func getBiometricProtected(item: SecureStorageMockItem) -> Result<Data, TIMSecureStorageError> {
         var mutableItem = item
         mutableItem.enableBioProtection()
         return get(item: mutableItem)
     }
 
-    func get(item: TestSecureStorageItem) -> Result<Data, TIMSecureStorageError> {
+    func get(item: SecureStorageMockItem) -> Result<Data, TIMSecureStorageError> {
         if item.isBioProtected {
             if let data = bioProtectedData[item.id] {
                 return .success(data)
@@ -40,11 +39,11 @@ final class TestSecureStorage : TIMSecureStorage {
         }
     }
 
-    func hasBiometricProtectedValue(item: TestSecureStorageItem) -> Bool {
+    func hasBiometricProtectedValue(item: SecureStorageMockItem) -> Bool {
         bioProtectedData[item.id] != nil
     }
 
-    func store(data: Data, item: TestSecureStorageItem) -> Result<Void, TIMSecureStorageError> {
+    func store(data: Data, item: SecureStorageMockItem) -> Result<Void, TIMSecureStorageError> {
         if item.isBioProtected {
             bioProtectedData[item.id] = data
         } else {
@@ -53,18 +52,18 @@ final class TestSecureStorage : TIMSecureStorage {
         return .success(Void())
     }
 
-    func storeBiometricProtected(data: Data, item: TestSecureStorageItem) -> Result<Void, TIMSecureStorageError> {
+    func storeBiometricProtected(data: Data, item: SecureStorageMockItem) -> Result<Void, TIMSecureStorageError> {
         var mutableItem = item
         mutableItem.enableBioProtection()
         return store(data: data, item: mutableItem)
     }
 
-    func remove(item: TestSecureStorageItem) {
+    func remove(item: SecureStorageMockItem) {
         bioProtectedData.removeValue(forKey: item.id)
         protectedData.removeValue(forKey: item.id)
     }
 
-    func hasValue(item: TestSecureStorageItem) -> Bool {
+    func hasValue(item: SecureStorageMockItem) -> Bool {
         protectedData[item.id] != nil || bioProtectedData[item.id] != nil
     }
 
