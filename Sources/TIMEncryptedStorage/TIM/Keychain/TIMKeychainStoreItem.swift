@@ -2,7 +2,7 @@ import Foundation
 
 /// Represents an item in the keychain with a given ID
 /// The keychain operations are based on a set of parameters, why this item type uses a parameter based approach.
-public struct TIMKeychainStoreItem: TIMSecureStoreItem {
+public struct TIMKeychainStorageItem: TIMSecureStorageItem {
 
     public let id: String
     private (set) var parameters: [String: Any]

@@ -5,8 +5,8 @@ final class KeychainStoreItemTests: XCTestCase {
     let keychain = TIMKeychain()
 
     func testKeychainStoreItem() {
-        let storeId: StoreID = "testStoreAndGet"
-        var item = TIMKeychainStoreItem(id: storeId)
+        let storeId: StorageID = "testStoreAndGet"
+        var item = TIMKeychainStorageItem(id: storeId)
         XCTAssertEqual(storeId, item.parameters[kSecAttrAccount as String] as! String)
         XCTAssertEqual(kSecClassGenericPassword, item.parameters[kSecClass as String] as! CFString)
         XCTAssertEqual(2, item.parameters.count)

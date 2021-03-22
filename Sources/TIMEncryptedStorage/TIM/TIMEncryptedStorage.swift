@@ -5,7 +5,7 @@ import Combine
 #endif
 
 /// StoreId typealias
-public typealias StoreID = String
+public typealias StorageID = String
 
 
 /// Trifork Identity Manager Encrypted Storage class.
@@ -13,19 +13,19 @@ public typealias StoreID = String
 /// The purpose of this classes is to store and load encrypted data based on a secret or biometric protection.
 ///
 /// This class depends on the Trifork Identity Manager Key Service (`TIMKeyService`), which handles encryption keys.
-public final class TIMEncryptedStorage<SecureStore: TIMSecureStore> {
+public final class TIMEncryptedStorage<SecureStorage: TIMSecureStorage> {
 
-    private let secureStore: SecureStore
+    private let secureStorage: SecureStorage
     private let keyService: TIMKeyServiceProtocol
     private let encryptionMethod: TIMESEncryptionMethod
 
     /// Constructor for `TIMEncryptedStorage`.
     /// - Parameters:
-    ///   - secureStore: The secure storage implementation. `TIMKeychain` is recommended.
+    ///   - secureStorage: The secure storage implementation. `TIMKeychain` is recommended.
     ///   - keyService: The key service implementation to use. `TIMKeyService` is recommended.
     ///   - encryptionMethod: Defines the encryption algorithm used by the framework. `.aesGcm` is recommended for iOS 13 or newer.
-    public init(secureStore: SecureStore, keyService: TIMKeyServiceProtocol, encryptionMethod: TIMESEncryptionMethod) {
-        self.secureStore = secureStore
+    public init(secureStorage: SecureStorage, keyService: TIMKeyServiceProtocol, encryptionMethod: TIMESEncryptionMethod) {
+        self.secureStorage = secureStorage
         self.encryptionMethod = encryptionMethod
         self.keyService = keyService
     }
@@ -33,8 +33,8 @@ public final class TIMEncryptedStorage<SecureStore: TIMSecureStore> {
     /// Checks whether there is a stored value in the secure store or not.
     /// - Parameter id: The identifier for the stored item.
     /// - Returns: `true` if the item is present, otherwise `false`
-    public func hasValue(id: StoreID) -> Bool {
-        secureStore.hasValue(item: SecureStore.SecureStoreItem(id: id))
+    public func hasValue(id: StorageID) -> Bool {
+        secureStorage.hasValue(item: SecureStorage.SecureStorageItem(id: id))
     }
 
     /// Checks whether there is a stored value in the secure store with biometric protection or not.
@@ -42,17 +42,17 @@ public final class TIMEncryptedStorage<SecureStore: TIMSecureStore> {
     ///   - id: The identifier for the stored item.
     ///   - keyId: The identifier for the key that was used when it was saved.
     /// - Returns: `true` if the item is present, otherwise `false`
-    public func hasBiometricProtectedValue(id: StoreID, keyId: String) -> Bool {
+    public func hasBiometricProtectedValue(id: StorageID, keyId: String) -> Bool {
         let secureStoreKey = longSecretSecureStoreId(keyId: keyId)
-        return secureStore.hasBiometricProtectedValue(item: SecureStore.SecureStoreItem(id: secureStoreKey)) &&
-            secureStore.hasValue(item: SecureStore.SecureStoreItem(id: id))
+        return secureStorage.hasBiometricProtectedValue(item: SecureStorage.SecureStorageItem(id: secureStoreKey)) &&
+            secureStorage.hasValue(item: SecureStorage.SecureStorageItem(id: id))
     }
 
 
     /// Removes a stored item.
     /// - Parameter id: The identifier for the stored item.
-    public func remove(id: StoreID) {
-        secureStore.remove(item: SecureStore.SecureStoreItem(id: id))
+    public func remove(id: StorageID) {
+        secureStorage.remove(item: SecureStorage.SecureStorageItem(id: id))
     }
 
 
@@ -71,12 +71,12 @@ public final class TIMEncryptedStorage<SecureStore: TIMSecureStore> {
     }
 
     private func storeLongSecret(keyId: String, longSecret: String) -> Result<Void, TIMEncryptedStorageError> {
-        let secureStoreKey = longSecretSecureStoreId(keyId: keyId)
-        let result = secureStore.storeBiometricProtected(data: Data(longSecret.utf8), item: SecureStore.SecureStoreItem(id: secureStoreKey))
+        let secureStorageKey = longSecretSecureStoreId(keyId: keyId)
+        let result = secureStorage.storeBiometricProtected(data: Data(longSecret.utf8), item: SecureStorage.SecureStorageItem(id: secureStorageKey))
         return result.mapError({ TIMEncryptedStorageError.secureStorageFailed($0) })
     }
 
-    private func handleKeyServerResultAndEncryptData(keyServerResult: Result<TIMKeyModel, TIMKeyServiceError>, id: StoreID, data: Data) -> Result<Void, TIMEncryptedStorageError> {
+    private func handleKeyServerResultAndEncryptData(keyServerResult: Result<TIMKeyModel, TIMKeyServiceError>, id: StorageID, data: Data) -> Result<Void, TIMEncryptedStorageError> {
         switch keyServerResult {
         case .success(let keyModel):
             return encryptAndStore(id: id, data: data, keyModel: keyModel)
@@ -85,7 +85,7 @@ public final class TIMEncryptedStorage<SecureStore: TIMSecureStore> {
         }
     }
 
-    private func handleKeyServerResultAndDecryptData(keyServerResult: Result<TIMKeyModel, TIMKeyServiceError>, id: StoreID) -> Result<Data, TIMEncryptedStorageError> {
+    private func handleKeyServerResultAndDecryptData(keyServerResult: Result<TIMKeyModel, TIMKeyServiceError>, id: StorageID) -> Result<Data, TIMEncryptedStorageError> {
         switch keyServerResult {
         case .success(let keyModel):
             return loadAndDecrypt(id: id, keyModel: keyModel)
@@ -94,11 +94,11 @@ public final class TIMEncryptedStorage<SecureStore: TIMSecureStore> {
         }
     }
 
-    private func encryptAndStore(id: StoreID, data: Data, keyModel: TIMKeyModel) -> Result<Void, TIMEncryptedStorageError> {
+    private func encryptAndStore(id: StorageID, data: Data, keyModel: TIMKeyModel) -> Result<Void, TIMEncryptedStorageError> {
         let result: Result<Void, TIMEncryptedStorageError>
         do {
             let encryptedData = try keyModel.encrypt(data: data, encryptionMethod: encryptionMethod)
-            let storeResult = secureStore.store(data: encryptedData, item: SecureStore.SecureStoreItem(id: id))
+            let storeResult = secureStorage.store(data: encryptedData, item: SecureStorage.SecureStorageItem(id: id))
             result = storeResult.mapError({ TIMEncryptedStorageError.secureStorageFailed($0) })
         }
         catch let error as TIMEncryptedStorageError {
@@ -110,9 +110,9 @@ public final class TIMEncryptedStorage<SecureStore: TIMSecureStore> {
         return result
     }
 
-    private func loadAndDecrypt(id: StoreID, keyModel: TIMKeyModel) -> Result<Data, TIMEncryptedStorageError> {
+    private func loadAndDecrypt(id: StorageID, keyModel: TIMKeyModel) -> Result<Data, TIMEncryptedStorageError> {
         let result: Result<Data, TIMEncryptedStorageError>
-        let loadResult: Result<Data, TIMSecureStorageError> = secureStore.get(item: SecureStore.SecureStoreItem(id: id))
+        let loadResult: Result<Data, TIMSecureStorageError> = secureStorage.get(item: SecureStorage.SecureStorageItem(id: id))
 
         switch loadResult {
         case .success(let encryptedData):
@@ -140,49 +140,49 @@ public final class TIMEncryptedStorage<SecureStore: TIMSecureStore> {
 public extension TIMEncryptedStorage {
 
     /// Combine wrapper for `store(id:data:keyId:secret:completion:)`
-    func store(id: StoreID, data: Data, keyId: String, secret: String) -> Future<Void, TIMEncryptedStorageError> {
+    func store(id: StorageID, data: Data, keyId: String, secret: String) -> Future<Void, TIMEncryptedStorageError> {
         Future { promise in
             self.store(id: id, data: data, keyId: keyId, secret: secret, completion: { promise($0) })
         }
     }
 
     /// Combine wrapper for `store(id:data:keyId:longSecret:completion:)`
-    func store(id: StoreID, data: Data, keyId: String, longSecret: String) -> Future<Void, TIMEncryptedStorageError> {
+    func store(id: StorageID, data: Data, keyId: String, longSecret: String) -> Future<Void, TIMEncryptedStorageError> {
         Future { promise in
             self.store(id: id, data: data, keyId: keyId, longSecret: longSecret, completion: { promise($0) })
         }
     }
 
     /// Combine wrapper for `storeWithNewKey(id:data:secret:completion:)`
-    func storeWithNewKey(id: StoreID, data: Data, secret: String) -> Future<TIMESKeyCreationResult, TIMEncryptedStorageError> {
+    func storeWithNewKey(id: StorageID, data: Data, secret: String) -> Future<TIMESKeyCreationResult, TIMEncryptedStorageError> {
         Future { promise in
             self.storeWithNewKey(id: id, data: data, secret: secret, completion: { promise($0) })
         }
     }
 
     /// Combine wrapper for `storeViaBiometric(id:data:keyId:completion:)`
-    func storeViaBiometric(id: StoreID, data: Data, keyId: String) -> Future<Void, TIMEncryptedStorageError> {
+    func storeViaBiometric(id: StorageID, data: Data, keyId: String) -> Future<Void, TIMEncryptedStorageError> {
         Future { promise in
             self.storeViaBiometric(id: id, data: data, keyId: keyId, completion: { promise($0) })
         }
     }
 
     /// Combine wrapper for `storeViaBiometricWithNewKey(id:data:secret:completion:)`
-    func storeViaBiometricWithNewKey(id: StoreID, data: Data, secret: String) -> Future<TIMESKeyCreationResult, TIMEncryptedStorageError> {
+    func storeViaBiometricWithNewKey(id: StorageID, data: Data, secret: String) -> Future<TIMESKeyCreationResult, TIMEncryptedStorageError> {
         Future { promise in
             self.storeViaBiometricWithNewKey(id: id, data: data, secret: secret, completion: { promise($0) })
         }
     }
 
     /// Combine wrapper for `get(id:keyId:secret:completion:)`
-    func get(id: StoreID, keyId: String, secret: String) -> Future<Data, TIMEncryptedStorageError> {
+    func get(id: StorageID, keyId: String, secret: String) -> Future<Data, TIMEncryptedStorageError> {
         Future { promise in
             self.get(id: id, keyId: keyId, secret: secret, completion: { promise($0) })
         }
     }
 
     /// Combine wrapper for `getViaBiometric(id:keyId:completion:)`
-    func getViaBiometric(id: StoreID, keyId: String) -> Future<TIMESBiometricLoadResult, TIMEncryptedStorageError> {
+    func getViaBiometric(id: StorageID, keyId: String) -> Future<TIMESBiometricLoadResult, TIMEncryptedStorageError> {
         Future { promise in
             self.getViaBiometric(id: id, keyId: keyId, completion: { promise($0) })
         }
@@ -220,7 +220,7 @@ public extension TIMEncryptedStorage {
     ///   - keyId: The identifier for the key that was created with the `secret`.
     ///   - secret: The secret for the key.
     ///   - completion: Invoked when the operation is done with a `Result`.
-    func store(id: StoreID, data: Data, keyId: String, secret: String, completion: @escaping TIMESStatusCompletion) {
+    func store(id: StorageID, data: Data, keyId: String, secret: String, completion: @escaping TIMESStatusCompletion) {
         // 1. Get encryption key with keyId + secret
         // 2. Encrypt data with encryption key from response
         // 3. Store encrypted data in secure storage with id
@@ -238,7 +238,7 @@ public extension TIMEncryptedStorage {
     ///   - keyId: The identifier for the key that was created with the `secret`.
     ///   - longSecret: The longSecret for the key.
     ///   - completion: Invoked when the operation is done with a `Result`.
-    func store(id: StoreID, data: Data, keyId: String, longSecret: String, completion: @escaping TIMESStatusCompletion) {
+    func store(id: StorageID, data: Data, keyId: String, longSecret: String, completion: @escaping TIMESStatusCompletion) {
         // 1. Get encryption key with keyId + longSecret
         // 2. Encrypt data with encryption key from response
         // 3. Store encrypted data in secure storage with id
@@ -255,7 +255,7 @@ public extension TIMEncryptedStorage {
     ///   - data: The data to encrypt and save.
     ///   - secret: The secret for the new key.
     ///   - completion: Invoked when the operation is done with a `Result` containing the `keyId` for the new key.
-    func storeWithNewKey(id: StoreID, data: Data, secret: String, completion: @escaping TIMESNewKeyStoreCompletion) {
+    func storeWithNewKey(id: StorageID, data: Data, secret: String, completion: @escaping TIMESNewKeyStoreCompletion) {
         // 1. Create new encryption key with secret
         // 2. Encrypt data with encryption key from response
         // 3. Store encrypted data in secure storage with id
@@ -282,13 +282,13 @@ public extension TIMEncryptedStorage {
     ///   - data: The data to encrypt and save.
     ///   - keyId: The identifier for the key, which can be recalled with the `longSecret` for biometric protection.
     ///   - completion: Invoked when the operation is done with a `Result`.
-    func storeViaBiometric(id: StoreID, data: Data, keyId: String, completion: @escaping TIMESStatusCompletion) {
+    func storeViaBiometric(id: StorageID, data: Data, keyId: String, completion: @escaping TIMESStatusCompletion) {
         // 1. Load longSecret for keyId via FaceID/TouchID
         // 2. Call store(id: id, data: data, keyId: keyId, longSecret: <loadedLongSecret>)
         // 3. Return result of store function
 
         let secureStorageKey = longSecretSecureStoreId(keyId: keyId)
-        let loadResult = secureStore.getBiometricProtected(item: SecureStore.SecureStoreItem(id: secureStorageKey))
+        let loadResult = secureStorage.getBiometricProtected(item: SecureStorage.SecureStorageItem(id: secureStorageKey))
 
         switch loadResult {
         case .failure(let secureStorageError):
@@ -308,7 +308,7 @@ public extension TIMEncryptedStorage {
     ///   - data: The data to encrypt and save.
     ///   - secret: The secret for the new key.
     ///   - completion: Invoked when the operation is done with a `Result` containing the `keyId` for the new key.
-    func storeViaBiometricWithNewKey(id: StoreID, data: Data, secret: String, completion: @escaping TIMESNewKeyStoreCompletion) {
+    func storeViaBiometricWithNewKey(id: StorageID, data: Data, secret: String, completion: @escaping TIMESNewKeyStoreCompletion) {
         // 1. Create new encryption key with secret
         // 2. Save longSecret for keyId via FaceID/TouchID
         // 3. Encrypt data with encryption key from response
@@ -341,7 +341,7 @@ public extension TIMEncryptedStorage {
     ///   - keyId: The identifier for the key that was created with the `secret`.
     ///   - secret: The secret which was used to create the `keyId`
     ///   - completion: Invoked when the operation is done with a `Result` containing the loaded data.
-    func get(id: StoreID, keyId: String, secret: String, completion: @escaping TIMESLoadCompletion) {
+    func get(id: StorageID, keyId: String, secret: String, completion: @escaping TIMESLoadCompletion) {
         // 1. Get encryption key with keyId + secret
         // 2. Load encrypted data from secure storage with id
         // 3. Decrypt data with encryption key
@@ -359,14 +359,14 @@ public extension TIMEncryptedStorage {
     ///   - id: The identifier for the data, which it was saved with.
     ///   - keyId: The identifier for the key that was created with the `secret`.
     ///   - completion: Invoked when the operation is done with a `Result` containing the loaded data and the `longSecret` that was used with the `keyId`.
-    func getViaBiometric(id: StoreID, keyId: String, completion: @escaping TIMESBiometricLoadCompletion) {
+    func getViaBiometric(id: StorageID, keyId: String, completion: @escaping TIMESBiometricLoadCompletion) {
         // 1. Load longSecret for keyId via FaceID/TouchID
         // 2. Get encryption key with keyId + longSecret
         // 3. Load encrypted data from secure storage with id
         // 4. Decrypt data with encryption key
         // 5. Return decrypted data + longSecret
         let secureStorageKey = longSecretSecureStoreId(keyId: keyId)
-        let longSecretResult = secureStore.getBiometricProtected(item: SecureStore.SecureStoreItem(id: secureStorageKey))
+        let longSecretResult = secureStorage.getBiometricProtected(item: SecureStorage.SecureStorageItem(id: secureStorageKey))
 
         switch longSecretResult {
         case .success(let longSecretData):

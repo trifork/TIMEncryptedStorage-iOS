@@ -4,17 +4,17 @@ import Foundation
 ///
 /// This wrapper is mainly for use internally in the TIMEncryptedStorage packages,
 /// but it might come in handy as public in rare cases.
-public final class TIMKeychain : TIMSecureStore {
+public final class TIMKeychain : TIMSecureStorage {
 
     public init() {
 
     }
 
-    public func remove(item: TIMKeychainStoreItem) {
+    public func remove(item: TIMKeychainStorageItem) {
         SecItemDelete(item.parameters as CFDictionary)
     }
 
-    public func store(data: Data, item: TIMKeychainStoreItem) -> Result<Void, TIMSecureStorageError> {
+    public func store(data: Data, item: TIMKeychainStorageItem) -> Result<Void, TIMSecureStorageError> {
         remove(item: item) //Remove before adding to avoid override errors
         var mutableParameters = item.parameters
         mutableParameters.updateValue(data, forKey: kSecValueData as String)
@@ -22,7 +22,7 @@ public final class TIMKeychain : TIMSecureStore {
         return mapStoreStatusToResult(status)
     }
 
-    public func storeBiometricProtected(data: Data, item: TIMKeychainStoreItem) -> Result<Void, TIMSecureStorageError> {
+    public func storeBiometricProtected(data: Data, item: TIMKeychainStorageItem) -> Result<Void, TIMSecureStorageError> {
         let biometricFlag: SecAccessControlCreateFlags
         if #available(iOS 11.3, *) {
             biometricFlag = .biometryAny
@@ -48,7 +48,7 @@ public final class TIMKeychain : TIMSecureStore {
         return result
     }
 
-    public func get(item: TIMKeychainStoreItem) -> Result<Data, TIMSecureStorageError> {
+    public func get(item: TIMKeychainStorageItem) -> Result<Data, TIMSecureStorageError> {
         var dataResult: AnyObject?
         var mutableParameters = item.parameters
         mutableParameters.updateValue(kSecMatchLimitOne, forKey: kSecMatchLimit as String)
@@ -62,13 +62,13 @@ public final class TIMKeychain : TIMSecureStore {
         return mapLoadStatusToResult(status, data: dataResult)
     }
 
-    public func getBiometricProtected(item: TIMKeychainStoreItem) -> Result<Data, TIMSecureStorageError> {
+    public func getBiometricProtected(item: TIMKeychainStorageItem) -> Result<Data, TIMSecureStorageError> {
         var mutableItem = item
         mutableItem.enableUseAuthenticationUI(kSecUseAuthenticationUIAllow)
         return get(item: mutableItem)
     }
 
-    public func hasValue(item: TIMKeychainStoreItem) -> Bool {
+    public func hasValue(item: TIMKeychainStorageItem) -> Bool {
         var result: AnyObject?
         // Search
         let status = withUnsafeMutablePointer(to: &result) { pointer in
@@ -77,7 +77,7 @@ public final class TIMKeychain : TIMSecureStore {
         return status == noErr || status == errSecInteractionNotAllowed // it should either ok or unaccessible to us.
     }
 
-    public func hasBiometricProtectedValue(item: TIMKeychainStoreItem) -> Bool {
+    public func hasBiometricProtectedValue(item: TIMKeychainStorageItem) -> Bool {
         var mutableItem = item
         mutableItem.enableUseAuthenticationUI(kSecUseAuthenticationUIFail)
         return hasValue(item: mutableItem)

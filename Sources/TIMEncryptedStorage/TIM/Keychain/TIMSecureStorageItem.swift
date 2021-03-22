@@ -1,7 +1,7 @@
 import Foundation
 
-/// Represents an item in a secure store item
-public protocol TIMSecureStoreItem {
+/// Represents an item in a secure storage item
+public protocol TIMSecureStorageItem {
     /// The id of the item
     var id: String { get }
 

@@ -8,7 +8,7 @@ final class TIMEncryptedStorageTests: XCTestCase {
     private static let baseUrl = URL(string: "https://oidc-test.hosted.trifork.com/auth/realms/dev")!
     private static let getUrl: URL = baseUrl.appendingPathComponent("keyservice/v1/key")
 
-    private static let testStore = TestSecureStore()
+    private static let testStore = TestSecureStorage()
     private static let keyService = TIMKeyService(
         configuration: TIMKeyServiceConfiguration(
             realmBaseUrl: baseUrl.absoluteString,
@@ -160,7 +160,7 @@ final class TIMEncryptedStorageTests: XCTestCase {
             }
 
             // Just a quick sanity check 😅
-            let savedData = try! Self.testStore.get(item: TestSecureStoreItem(id: id)).get()
+            let savedData = try! Self.testStore.get(item: TestSecureStorageItem(id: id)).get()
             XCTAssertNotEqual(savedData, data) // The data we saved shouldn't be equal to the data in the storage. We would expect it to be encrypted!
 
             loadData(storage: storage, id: id) { (result) in
@@ -304,7 +304,7 @@ final class TIMEncryptedStorageTests: XCTestCase {
 
     // MARK: - Test helpers using predefined keyId, secret and longSecret.
 
-    private func storeData(storage: TIMEncryptedStorage<TestSecureStore>, id: String, data: Data, assert: ((Result<Void, TIMEncryptedStorageError>) -> Void)?) {
+    private func storeData(storage: TIMEncryptedStorage<TestSecureStorage>, id: String, data: Data, assert: ((Result<Void, TIMEncryptedStorageError>) -> Void)?) {
         let expectStore = XCTestExpectation(description: "Store should have returned.")
         storage.store(id: id, data: data, keyId: Self.keyId, secret: Self.secret) { (result) in
             assert?(result)
@@ -313,7 +313,7 @@ final class TIMEncryptedStorageTests: XCTestCase {
         wait(for: [expectStore], timeout: 1.0)
     }
 
-    private func loadData(storage: TIMEncryptedStorage<TestSecureStore>, id: String, assert: ((Result<Data, TIMEncryptedStorageError>) -> Void)?) {
+    private func loadData(storage: TIMEncryptedStorage<TestSecureStorage>, id: String, assert: ((Result<Data, TIMEncryptedStorageError>) -> Void)?) {
         let expectStore = XCTestExpectation(description: "Store should have returned.")
         storage.get(id: id, keyId: Self.keyId, secret: Self.secret) { (result) in
             assert?(result)
@@ -322,7 +322,7 @@ final class TIMEncryptedStorageTests: XCTestCase {
         wait(for: [expectStore], timeout: 1.0)
     }
 
-    private func enableBio(storage: TIMEncryptedStorage<TestSecureStore>) {
+    private func enableBio(storage: TIMEncryptedStorage<TestSecureStorage>) {
         let expectBioEnabling = XCTestExpectation(description: "Store should have returned.")
         storage.enableBiometric(keyId: Self.keyId, secret: Self.secret) { (result) in
             switch result {
@@ -336,7 +336,7 @@ final class TIMEncryptedStorageTests: XCTestCase {
         wait(for: [expectBioEnabling], timeout: 1.0)
     }
 
-    private func storeDataWithBio(storage: TIMEncryptedStorage<TestSecureStore>, id: String, data: Data, assert: ((Result<Void, TIMEncryptedStorageError>) -> Void)?) {
+    private func storeDataWithBio(storage: TIMEncryptedStorage<TestSecureStorage>, id: String, data: Data, assert: ((Result<Void, TIMEncryptedStorageError>) -> Void)?) {
         let expectBioStore = XCTestExpectation(description: "Store should have returned.")
         storage.storeViaBiometric(id: id, data: data, keyId: Self.keyId) { (result) in
             assert?(result)
@@ -345,7 +345,7 @@ final class TIMEncryptedStorageTests: XCTestCase {
         wait(for: [expectBioStore], timeout: 1.0)
     }
 
-    private func loadDataWithBio(storage: TIMEncryptedStorage<TestSecureStore>, id: String, assert: ((Result<TIMESBiometricLoadResult, TIMEncryptedStorageError>) -> Void)?) {
+    private func loadDataWithBio(storage: TIMEncryptedStorage<TestSecureStorage>, id: String, assert: ((Result<TIMESBiometricLoadResult, TIMEncryptedStorageError>) -> Void)?) {
         let expectBioLoad = XCTestExpectation(description: "Store should have returned.")
         storage.getViaBiometric(id: id, keyId: Self.keyId) { (result) in
             assert?(result)
@@ -354,11 +354,11 @@ final class TIMEncryptedStorageTests: XCTestCase {
         wait(for: [expectBioLoad], timeout: 1.0)
     }
 
-    private func storage(_ method: TIMESEncryptionMethod) -> TIMEncryptedStorage<TestSecureStore> {
+    private func storage(_ method: TIMESEncryptionMethod) -> TIMEncryptedStorage<TestSecureStorage> {
         switch method {
         case .aesCbc:
             return TIMEncryptedStorage(
-                secureStore: Self.testStore,
+                secureStorage: Self.testStore,
                 keyService: Self.keyService,
                 encryptionMethod: .aesCbc
             )
@@ -366,7 +366,7 @@ final class TIMEncryptedStorageTests: XCTestCase {
             if #available(iOS 13, *) {
                 if method ==  .aesGcm {
                     return TIMEncryptedStorage(
-                        secureStore: Self.testStore,
+                        secureStorage: Self.testStore,
                         keyService: Self.keyService,
                         encryptionMethod: .aesGcm
                     )
