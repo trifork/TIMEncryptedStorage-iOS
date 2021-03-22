@@ -5,8 +5,6 @@ import Combine
 @testable import TIMEncryptedStorage
 
 final class TIMKeyServiceTests: XCTestCase {
-    private var createKeyModel: TIMKeyModel?
-
     static var config = TIMKeyServiceConfiguration(
         realmBaseUrl: "https://oidc-test.hosted.trifork.com/auth/realms/dev",
         version: .v1
