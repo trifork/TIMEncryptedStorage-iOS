@@ -9,7 +9,7 @@ final class TIMKeyServiceTests: XCTestCase {
         realmBaseUrl: "https://oidc-test.hosted.trifork.com/auth/realms/dev",
         version: .v1
     )
-    private static let baseUrl = URL(string: config.realmBaseUrl)!
+    private static let baseUrl = config.realmBaseUrl
 
     private let keyService: TIMKeyService = TIMKeyService(configuration: config, urlSession: .mockSession)
 
@@ -38,52 +38,46 @@ final class TIMKeyServiceTests: XCTestCase {
     }
 
     func testGetKey() {
-        let url = Self.baseUrl.appendingPathComponent("keyservice/v1/key")
-        let expectedKeyModel = TIMKeyModel.stub()
-        performKeyModelRequest(expectedKeyModel: expectedKeyModel, url: url) { (completion) in
+        let expectedKeyModel: TIMKeyModel = .stub()
+        performKeyModelRequest(expectedKeyModel: expectedKeyModel, endpoint: .key) { (completion) in
             keyService.getKey(secret: "1234", keyId: expectedKeyModel.keyId, completion: completion)
         }
     }
 
     @available(iOS 13, *)
     func testGetKeyPublisher() throws {
-        let url = Self.baseUrl.appendingPathComponent("keyservice/v1/key")
-        let keyModel = TIMKeyModel.stub()
-        performKeyModelPublisher(keyService.getKey(secret: "1234", keyId: keyModel.keyId), expectedKeyModel: keyModel, url: url)
+        let keyModel: TIMKeyModel = .stub()
+        performKeyModelPublisher(keyService.getKey(secret: "1234", keyId: keyModel.keyId), expectedKeyModel: keyModel, endpoint: .key)
     }
 
     func testCreateKey() {
-        let url = Self.baseUrl.appendingPathComponent("keyservice/v1/createkey")
-        let keyModel = TIMKeyModel.stub()
-        performKeyModelRequest(expectedKeyModel: keyModel, url: url) { (completion) in
+        let keyModel: TIMKeyModel = .stub()
+        performKeyModelRequest(expectedKeyModel: keyModel, endpoint: .createKey) { (completion) in
             keyService.createKey(secret: "1234", completion: completion)
         }
     }
 
     @available(iOS 13, *)
     func testCreateKeyPublisher() {
-        let url = Self.baseUrl.appendingPathComponent("keyservice/v1/createkey")
-        performKeyModelPublisher(keyService.createKey(secret: "1234"), expectedKeyModel: .stub(), url: url)
+        performKeyModelPublisher(keyService.createKey(secret: "1234"), expectedKeyModel: .stub(), endpoint: .createKey)
     }
 
     func testGetKeyViaLongSecret() {
-        let url = Self.baseUrl.appendingPathComponent("keyservice/v1/key")
-        let keyModel = TIMKeyModel.stub()
-        performKeyModelRequest(expectedKeyModel: keyModel, url: url) { (completion) in
+        let keyModel: TIMKeyModel = .stub()
+        performKeyModelRequest(expectedKeyModel: keyModel, endpoint: .key) { (completion) in
             keyService.getKeyViaLongSecret(longSecret: keyModel.longSecret!, keyId: keyModel.keyId, completion: completion)
         }
     }
 
     @available(iOS 13, *)
     func testGetKeyViaLongSecretPublisher() {
-        let url = Self.baseUrl.appendingPathComponent("keyservice/v1/key")
-        let keyModel = TIMKeyModel.stub()
-        performKeyModelPublisher(keyService.getKeyViaLongSecret(longSecret: keyModel.longSecret!, keyId: keyModel.keyId), expectedKeyModel: keyModel, url: url)
+        let keyModel: TIMKeyModel = .stub()
+        performKeyModelPublisher(keyService.getKeyViaLongSecret(longSecret: keyModel.longSecret!, keyId: keyModel.keyId), expectedKeyModel: keyModel, endpoint: .key)
     }
 
     func testUnknownStatusCode() {
-        let url = Self.baseUrl.appendingPathComponent("keyservice/v1/key")
-        let keyModel = TIMKeyModel.stub()
+        let url = URL(string: Self.baseUrl)!.appendingPathComponent("keyservice/v1/key")
+        let keyModel: TIMKeyModel = .stub()
         URLSessionStubResults.resultsForUrls[url] = .dataResponse(
             data: try! JSONEncoder().encode(keyModel),
             response: HTTPURLResponse(url: url, statusCode: 600, httpVersion: nil, headerFields: nil)!
@@ -102,14 +96,13 @@ final class TIMKeyServiceTests: XCTestCase {
     }
 
     func testUnableToDecode() {
-        let url = Self.baseUrl.appendingPathComponent("keyservice/v1/key")
-        let keyModel = TIMKeyModel.stub()
+        let url = URL(string: Self.baseUrl)!.appendingPathComponent("keyservice/v1/key")
         URLSessionStubResults.resultsForUrls[url] = .dataResponse(
             data: "NotJson".data(using: .utf8)!,
             response: HTTPURLResponse(url: url, statusCode: 200, httpVersion: nil, headerFields: nil)!
         )
         let expectation = XCTestExpectation()
-        keyService.getKey(secret: "1234", keyId: keyModel.keyId) { (result) in
+        keyService.getKey(secret: "1234", keyId: UUID().uuidString) { (result) in
             switch result {
             case .failure(let error):
                 XCTAssertEqual(error, .unableToDecode)
@@ -122,7 +115,7 @@ final class TIMKeyServiceTests: XCTestCase {
     }
 
     func testUnexpectedResponse() {
-        let url = Self.baseUrl.appendingPathComponent("keyservice/v1/key")
+        let url = URL(string: Self.baseUrl)!.appendingPathComponent("keyservice/v1/key")
         let keyModel = TIMKeyModel.stub()
         URLSessionStubResults.resultsForUrls[url] = .dataResponse(
             data: try! JSONEncoder().encode(keyModel),
@@ -143,14 +136,10 @@ final class TIMKeyServiceTests: XCTestCase {
 
     // MARK: - Private test helpers
 
-    private func performKeyModelRequest(expectedKeyModel: TIMKeyModel, url: URL, performRequest: (@escaping (Result<TIMKeyModel, TIMKeyServiceError>) -> Void) -> Void) {
-        let keyModel = TIMKeyModel.stub()
-        let jsonData = try! JSONEncoder().encode(keyModel)
-        URLSessionStubResults.resultsForUrls[url] = URLSessionStubResult.dataResponse(
-            data: jsonData,
-            response: HTTPURLResponse(url: url, statusCode: 200, httpVersion: nil, headerFields: nil)!
-        )
-        let expect = XCTestExpectation(description: "CreateKey should have returned.")
+    private func performKeyModelRequest(expectedKeyModel: TIMKeyModel, endpoint: TIMKeyServiceEndpoints, performRequest: (@escaping (Result<TIMKeyModel, TIMKeyServiceError>) -> Void) -> Void) {
+        let keyModel: TIMKeyModel = .stub()
+        URLSessionStubResults.setKeyModel(baseUrl: Self.baseUrl, endpoint: endpoint, keyModel: keyModel)
+        let expect = XCTestExpectation(description: "KeyService should have returned.")
         performRequest({ result in
             switch result {
             case .failure(let error):
@@ -164,12 +153,8 @@ final class TIMKeyServiceTests: XCTestCase {
     }
 
     @available(iOS 13, *)
-    private func performKeyModelPublisher(_ publisher: Future<TIMKeyModel, TIMKeyServiceError>, expectedKeyModel: TIMKeyModel, url: URL) {
-        let jsonData = try! JSONEncoder().encode(expectedKeyModel)
-        URLSessionStubResults.resultsForUrls[url] = URLSessionStubResult.dataResponse(
-            data: jsonData,
-            response: HTTPURLResponse(url: url, statusCode: 200, httpVersion: nil, headerFields: nil)!
-        )
+    private func performKeyModelPublisher(_ publisher: Future<TIMKeyModel, TIMKeyServiceError>, expectedKeyModel: TIMKeyModel, endpoint: TIMKeyServiceEndpoints) {
+        URLSessionStubResults.setKeyModel(baseUrl: Self.baseUrl, endpoint: endpoint, keyModel: expectedKeyModel)
 
         let expectation = XCTestExpectation(description: "Publisher should have completed.")
         var cancelBag = Set<AnyCancellable>()

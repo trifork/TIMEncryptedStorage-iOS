@@ -5,13 +5,12 @@ import Combine
 @testable import TIMEncryptedStorage
 
 final class TIMEncryptedStorageTests: XCTestCase {
-    private static let baseUrl = URL(string: "https://oidc-test.hosted.trifork.com/auth/realms/dev")!
-    private static let getUrl: URL = baseUrl.appendingPathComponent("keyservice/v1/key")
+    private static let baseUrl = "https://oidc-test.hosted.trifork.com/auth/realms/dev"
 
     private static let testStore = SecureStorageMock()
     private static let keyService = TIMKeyService(
         configuration: TIMKeyServiceConfiguration(
-            realmBaseUrl: baseUrl.absoluteString,
+            realmBaseUrl: baseUrl,
             version: .v1
         ),
         urlSession: .mockSession
@@ -28,10 +27,7 @@ final class TIMEncryptedStorageTests: XCTestCase {
 
         // Configure mock key service
         let keyModel = TIMKeyModel(keyId: keyId, key: "TWJRZVRoV21acTR0Nnc5eg==", longSecret: longSecret)
-        URLSessionStubResults.resultsForUrls[getUrl] = .dataResponse(
-            data: try! JSONEncoder().encode(keyModel),
-            response: HTTPURLResponse(url: getUrl, statusCode: 200, httpVersion: nil, headerFields: nil)!
-        )
+        URLSessionStubResults.setKeyModel(baseUrl: baseUrl, endpoint: .key, keyModel: keyModel)
     }
 
     func testHasValue() {
@@ -209,17 +205,9 @@ final class TIMEncryptedStorageTests: XCTestCase {
 
     func testStoreWithNewKey() {
         let createKeyId = UUID().uuidString
-        let createUrl: URL = Self.baseUrl.appendingPathComponent("keyservice/v1/createkey")
         let createKeyModel = TIMKeyModel(keyId: createKeyId, key: "JkYpSkBNY1FmVGpXblpyNA==", longSecret: "longSecret2")
-        URLSessionStubResults.resultsForUrls[createUrl] = .dataResponse(
-            data: try! JSONEncoder().encode(createKeyModel),
-            response: HTTPURLResponse(url: createUrl, statusCode: 200, httpVersion: nil, headerFields: nil)!
-        )
-
-        URLSessionStubResults.resultsForUrls[Self.getUrl] = .dataResponse(
-            data: try! JSONEncoder().encode(createKeyModel),
-            response: HTTPURLResponse(url: createUrl, statusCode: 200, httpVersion: nil, headerFields: nil)!
-        )
+        URLSessionStubResults.setKeyModel(baseUrl: Self.baseUrl, endpoint: .createKey, keyModel: createKeyModel)
+        URLSessionStubResults.setKeyModel(baseUrl: Self.baseUrl, endpoint: .key, keyModel: createKeyModel)
         
         let id = "test"
         let data = "testData".data(using: .utf8)!
@@ -255,17 +243,9 @@ final class TIMEncryptedStorageTests: XCTestCase {
 
     func testStoreViaBiometricWithNewKey() {
         let createKeyId = UUID().uuidString
-        let createUrl: URL = Self.baseUrl.appendingPathComponent("keyservice/v1/createkey")
         let createKeyModel = TIMKeyModel(keyId: createKeyId, key: "JkYpSkBNY1FmVGpXblpyNA==", longSecret: "longSecret2")
-        URLSessionStubResults.resultsForUrls[createUrl] = .dataResponse(
-            data: try! JSONEncoder().encode(createKeyModel),
-            response: HTTPURLResponse(url: createUrl, statusCode: 200, httpVersion: nil, headerFields: nil)!
-        )
-
-        URLSessionStubResults.resultsForUrls[Self.getUrl] = .dataResponse(
-            data: try! JSONEncoder().encode(createKeyModel),
-            response: HTTPURLResponse(url: createUrl, statusCode: 200, httpVersion: nil, headerFields: nil)!
-        )
+        URLSessionStubResults.setKeyModel(baseUrl: Self.baseUrl, endpoint: .createKey, keyModel: createKeyModel)
+        URLSessionStubResults.setKeyModel(baseUrl: Self.baseUrl, endpoint: .key, keyModel: createKeyModel)
 
         let id = "test"
         let data = "testData".data(using: .utf8)!

@@ -38,7 +38,7 @@ import Foundation
 }
 
 /// Contains the stub results for URLs
-public struct URLSessionStubResults {
+struct URLSessionStubResults {
     /// Contains stub results for specific URLs, which will be used when mocking `URLSession` via `URLSessionMockProtocol`
     public static var resultsForUrls: [URL?: URLSessionStubResult] = [:]
 
@@ -46,13 +46,25 @@ public struct URLSessionStubResults {
     public static func reset() {
         resultsForUrls.removeAll()
     }
+
+    public static func setKeyModel(baseUrl: String, endpoint: TIMKeyServiceEndpoints, keyModel: TIMKeyModel) {
+        guard let bUrl = URL(string: baseUrl) else {
+            print("Failed to set key model for base url.")
+            return
+        }
+        let url = bUrl.appendingPathComponent("keyservice/v1/\(endpoint.urlPath)")
+        URLSessionStubResults.resultsForUrls[url] = .dataResponse(
+            data: try! JSONEncoder().encode(keyModel),
+            response: HTTPURLResponse(url: url, statusCode: 200, httpVersion: nil, headerFields: nil)!
+        )
+    }
 }
 
 /// Stub results for `URLSession` mocking via `URLSessionMockProtocol`
-public struct URLSessionStubResult {
-    public let response: URLResponse?
-    public let error: NSError?
-    public let data: Data?
+struct URLSessionStubResult {
+    let response: URLResponse?
+    let error: NSError?
+    let data: Data?
 
     /// Private init to make sure that we don't create unrealistic setups
     private init(response: URLResponse?, error: NSError?, data: Data?) {
@@ -62,7 +74,7 @@ public struct URLSessionStubResult {
     }
 
     /// Stub for successful networkRequest with response and data
-    public static func dataResponse(data: Data, response: URLResponse) -> URLSessionStubResult {
+    static func dataResponse(data: Data, response: URLResponse) -> URLSessionStubResult {
         URLSessionStubResult(
             response: response,
             error: nil,
@@ -71,7 +83,7 @@ public struct URLSessionStubResult {
     }
 
     /// Creates stub for failing network request, e.g. network problems.
-    public static func error(error: NSError) -> URLSessionStubResult {
+    static func error(error: NSError) -> URLSessionStubResult {
         URLSessionStubResult(
             response: nil,
             error: error,
