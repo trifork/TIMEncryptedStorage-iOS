@@ -1,5 +1,7 @@
 # Trifork Identity Manager Encrypted Storage iOS
 
+![iOS-9.0](https://img.shields.io/static/v1?logo=apple&label=iOS&message=9.0%2B&color=orange&style=for-the-badge)
+
 `TIMEncryptedStorage` is a standalone framework designed for [Trifork Identity Manager](http://identitymanager.trifork.com/) as a encrypted storage handler. .
 
 This framework handles communication with the Trifork Identity Manager KeyService and stores/fetches encrypted/decrypted data from the iOS Keychain. Furthermore, it handles biometric access to data by a long secret from the key service
