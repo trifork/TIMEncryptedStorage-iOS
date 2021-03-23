@@ -47,7 +47,11 @@ final class TIMKeyServiceTests: XCTestCase {
     @available(iOS 13, *)
     func testGetKeyPublisher() {
         let keyModel: TIMKeyModel = .stub()
-        performKeyModelPublisher(keyService.getKey(secret: "1234", keyId: keyModel.keyId), expectedKeyModel: keyModel, endpoint: .key)
+        performKeyModelPublisher(
+            keyService.getKey(secret: "1234", keyId: keyModel.keyId),
+            expectedKeyModel: keyModel,
+            endpoint: .key
+        )
     }
 
     func testCreateKey() {
@@ -60,7 +64,11 @@ final class TIMKeyServiceTests: XCTestCase {
     @available(iOS 13, *)
     func testCreateKeyPublisher() {
         let keyModel: TIMKeyModel = .stub()
-        performKeyModelPublisher(keyService.createKey(secret: "1234"), expectedKeyModel: keyModel, endpoint: .createKey)
+        performKeyModelPublisher(
+            keyService.createKey(secret: "1234"),
+            expectedKeyModel: keyModel,
+            endpoint: .createKey
+        )
     }
 
     func testGetKeyViaLongSecret() {
@@ -73,7 +81,11 @@ final class TIMKeyServiceTests: XCTestCase {
     @available(iOS 13, *)
     func testGetKeyViaLongSecretPublisher() {
         let keyModel: TIMKeyModel = .stub()
-        performKeyModelPublisher(keyService.getKeyViaLongSecret(longSecret: keyModel.longSecret!, keyId: keyModel.keyId), expectedKeyModel: keyModel, endpoint: .key)
+        performKeyModelPublisher(
+            keyService.getKeyViaLongSecret(longSecret: keyModel.longSecret!, keyId: keyModel.keyId),
+            expectedKeyModel: keyModel,
+            endpoint: .key
+        )
     }
 
     func testUnknownStatusCode() {
@@ -154,12 +166,12 @@ final class TIMKeyServiceTests: XCTestCase {
     }
 
     @available(iOS 13, *)
-    private func performKeyModelPublisher(_ publisher: Future<TIMKeyModel, TIMKeyServiceError>, expectedKeyModel: TIMKeyModel, endpoint: TIMKeyServiceEndpoints) {
+    private func performKeyModelPublisher(_ constructPublisher: @autoclosure () -> Future<TIMKeyModel, TIMKeyServiceError>, expectedKeyModel: TIMKeyModel, endpoint: TIMKeyServiceEndpoints) {
         URLSessionStubResults.setKeyModel(baseUrl: Self.baseUrl, endpoint: endpoint, keyModel: expectedKeyModel)
 
         let expectation = XCTestExpectation(description: "Publisher should have completed.")
         var cancelBag = Set<AnyCancellable>()
-        publisher
+        constructPublisher()
             .sink(
                 receiveCompletion: { completion in
                     switch completion {
@@ -168,7 +180,6 @@ final class TIMKeyServiceTests: XCTestCase {
                     case .finished: break
                     }
                     expectation.fulfill()
-
                 },
                 receiveValue: { km in
                     XCTAssertEqual(km, expectedKeyModel)
