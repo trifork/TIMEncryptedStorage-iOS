@@ -45,7 +45,7 @@ final class TIMKeyServiceTests: XCTestCase {
     }
 
     @available(iOS 13, *)
-    func testGetKeyPublisher() throws {
+    func testGetKeyPublisher() {
         let keyModel: TIMKeyModel = .stub()
         performKeyModelPublisher(keyService.getKey(secret: "1234", keyId: keyModel.keyId), expectedKeyModel: keyModel, endpoint: .key)
     }
@@ -59,7 +59,8 @@ final class TIMKeyServiceTests: XCTestCase {
 
     @available(iOS 13, *)
     func testCreateKeyPublisher() {
-        performKeyModelPublisher(keyService.createKey(secret: "1234"), expectedKeyModel: .stub(), endpoint: .createKey)
+        let keyModel: TIMKeyModel = .stub()
+        performKeyModelPublisher(keyService.createKey(secret: "1234"), expectedKeyModel: keyModel, endpoint: .createKey)
     }
 
     func testGetKeyViaLongSecret() {
@@ -178,7 +179,7 @@ final class TIMKeyServiceTests: XCTestCase {
     }
 }
 
-extension TIMKeyModel: Equatable {
+extension TIMKeyModel: Equatable, CustomDebugStringConvertible {
     public static func == (lhs: TIMKeyModel, rhs: TIMKeyModel) -> Bool {
         return lhs.key == rhs.key && lhs.keyId == rhs.keyId && lhs.longSecret == rhs.longSecret
     }
@@ -189,5 +190,9 @@ extension TIMKeyModel: Equatable {
         let longSecret = String(encryptionKey.reversed())
 
         return TIMKeyModel(keyId: keyId, key: encryptionKey, longSecret: longSecret)
+    }
+
+    public var debugDescription: String {
+        return "keyId=\(keyId),key=\(key),longSecret=\(longSecret ?? "nil")"
     }
 }
