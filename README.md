@@ -14,8 +14,8 @@ Add this repo to your SPM 📦
 
 https://github.com/trifork/TIMEncryptedStorage-iOS
 
-### Setup configuration
-Before using any function from `TIMEncryptedStorage` you have to configure the framework by calling the `configure` method (typically you want to do this on app startup):
+### Initialisation
+`TIMEncryptedStorage` depends on a secure storage and key service instance. The default way of configuring this is as in the example below.
 
 ```swift
 import TIMEncryptedStorage // Required for TIMKeyServiceConfiguration
@@ -24,8 +24,14 @@ let config = TIMKeyServiceConfiguration(
     realmBaseUrl: "<TIM Keyservice URL>",
     version: .v1
 )
-TIMEncryptedStorage.configure(keyServiceConfiguration: config, encryptionMethod: .aesGcm)
+let encryptedStorage = TIMEncryptedStorage(
+    secureStorage: TIMKeychain(),
+    keyService: TIMKeyService(configuration: config),
+    encryptionMethod: .aesGcm
+)
 ```
+
+You might want to implement your own versions of the `SecureStorage` and `TIMKeyServiceProtocol` protocol for testing purposes.
 
 ## Common use cases
 
@@ -35,7 +41,7 @@ The following exampes uses `TIMEncryptedStorage`'s `Combine` interface, which re
 ```swift
 // Store data encrypted for the first time with a new secret "1234"
 let myRawData = Data("someData".utf8)
-TIMEncryptedStorage.storeWithNewKey(id: "my-id", data: myRawData, secret: "1234")
+encryptedStorage.storeWithNewKey(id: "my-id", data: myRawData, secret: "1234")
     .sink { (_) in } receiveValue: { (result) in
         print("Key created with id: \(result.keyId)")
         print("Key created with longSecret: \(result.longSecret)")
@@ -48,7 +54,7 @@ TIMEncryptedStorage.storeWithNewKey(id: "my-id", data: myRawData, secret: "1234"
 ### Load and decrypt data
 ```swift
 let keyId = "<keyId from store with newKey>"
-TIMEncryptedStorage.get(id: "my-id", keyId: keyId, secret: "1234")
+encryptedStorage.get(id: "my-id", keyId: keyId, secret: "1234")
     .sink { (_) in } receiveValue: { (data) in
         let string = String(data: data, encoding: .utf8)
         print("Loaded data from \(keyId): \(string)")
