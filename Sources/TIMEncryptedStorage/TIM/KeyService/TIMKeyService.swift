@@ -110,7 +110,6 @@ public extension TIMKeyService {
             self.createKey(secret: secret, completion: promise)
         }
     }
-
 }
 #endif
 

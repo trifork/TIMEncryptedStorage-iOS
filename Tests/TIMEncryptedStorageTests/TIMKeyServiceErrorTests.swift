@@ -3,11 +3,6 @@ import XCTest
 
 final class TIMKeyServiceErrorTests: XCTestCase {
 
-    override class func setUp() {
-        super.setUp()
-
-    }
-
     func testMapKeyServiceErrorFromCode() {
         XCTAssertEqual(
             TIMKeyServiceError.potentiallyNoInternet,
