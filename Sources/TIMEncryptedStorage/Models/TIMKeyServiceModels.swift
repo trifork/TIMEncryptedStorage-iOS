@@ -1,6 +1,5 @@
 import Foundation
 
-
 /// Available versions for the key service API.
 public enum TIMKeyServiceVersion {
     case v1
@@ -17,7 +16,6 @@ public enum TIMKeyServiceVersion {
 public struct TIMKeyServiceConfiguration {
     let realmBaseUrl: String
     let version: TIMKeyServiceVersion
-
 
     /// Constructor for configuration
     /// - Parameters:

@@ -12,10 +12,10 @@ public enum TIMEncryptedStorageError: Error, LocalizedError {
     // MARK: - KeySever errors
     case keyServiceFailed(TIMKeyServiceError)
 
-    // MARK: - Keychain errors
-    case keychainFailed(TIMKeychainError)
+    // MARK: - Secure storage errors
+    case secureStorageFailed(TIMSecureStorageError)
 
-    // MARK: - Unexpected data from Keychain
+    // MARK: - Unexpected data from secure storage
     case unexpectedData
 
 
@@ -31,10 +31,10 @@ public enum TIMEncryptedStorageError: Error, LocalizedError {
             return "The encryption key is invalid."
         case .keyServiceFailed(let error):
             return "The KeyService failed with error: \(error)"
-        case .keychainFailed(let error):
-            return "The Keychain failed with error: \(error)"
+        case .secureStorageFailed(let error):
+            return "The secure storage failed with error: \(error)"
         case .unexpectedData:
-            return "The Keychain loaded unexpected data. Failed to use the data."
+            return "The secure storage loaded unexpected data. Failed to use the data."
         }
     }
 }
@@ -77,7 +77,7 @@ public enum TIMKeyServiceError: Error, Equatable, LocalizedError {
     }
 }
 
-public enum TIMKeychainError : Error, LocalizedError {
+public enum TIMSecureStorageError : Error, LocalizedError {
     /// Failed to store data
     case failedToStoreData
 
@@ -92,23 +92,23 @@ public enum TIMKeychainError : Error, LocalizedError {
         case .authenticationFailedForData:
             return "The authentication failed for data, e.g. the user failed to unlock or cancelled the biometric ID prompt."
         case .failedToLoadData:
-            return "Failed to load data from keychain."
+            return "Failed to load data from secure storage."
         case .failedToStoreData:
-            return "Failed to store data in keychain."
+            return "Failed to store data in secure storage."
         }
     }
 }
 
-func mapKeyServerError(_ error: Error?) -> TIMKeyServiceError {
+func mapKeyServiceError(_ error: Error?) -> TIMKeyServiceError {
     guard let err = error else {
         return .unknown(nil, nil)
     }
 
     let error = err as NSError
-    return mapKeyServerError(withCode: error.code, errorDescription: error.localizedDescription)
+    return mapKeyServiceError(withCode: error.code, errorDescription: error.localizedDescription)
 }
 
-func mapKeyServerError(withCode code: Int, errorDescription: String? = nil) -> TIMKeyServiceError {
+func mapKeyServiceError(withCode code: Int, errorDescription: String? = nil) -> TIMKeyServiceError {
     switch code {
     case -1009: return .potentiallyNoInternet
     case let code where code < 0: return .badInternet
