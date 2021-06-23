@@ -28,13 +28,13 @@ final class SecureStorageMock : TIMSecureStorage {
             if let data = bioProtectedData[item.id] {
                 return .success(data)
             } else {
-                return .failure(.failedToLoadData)
+                return .failure(.failedToLoadData(nil))
             }
         } else {
             if let data = protectedData[item.id] {
                 return .success(data)
             } else {
-                return .failure(.failedToLoadData)
+                return .failure(.failedToLoadData(nil))
             }
         }
     }
