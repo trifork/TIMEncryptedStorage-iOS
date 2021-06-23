@@ -43,7 +43,7 @@ public final class TIMKeychain : TIMSecureStorage {
             mutableItem.enableSafeAccessControl(safeAccessControl)
             result = store(data: data, item: mutableItem)
         } else {
-            result = .failure(.failedToStoreData(nil))
+            result = .failure(.failedToStoreData("Failed to generate SecAccessControl object for data."))
         }
         return result
     }
@@ -91,7 +91,7 @@ public final class TIMKeychain : TIMSecureStorage {
         case noErr:
             result = .success(Void())
         default:
-            result = .failure(.failedToStoreData(Int(status)))
+            result = .failure(.failedToStoreData(status.errorDescription))
         }
         return result
     }
@@ -105,10 +105,10 @@ public final class TIMKeychain : TIMSecureStorage {
             if let optData = (data as? Data) {
                 result = .success(optData)
             } else {
-                result = .failure(.failedToLoadData(Int(status)))
+                result = .failure(.failedToLoadData(status.errorDescription))
             }
         default:
-            result = .failure(.failedToLoadData(Int(status)))
+            result = .failure(.failedToLoadData(status.errorDescription))
         }
         return result
     }

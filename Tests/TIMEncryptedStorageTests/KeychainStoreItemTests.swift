@@ -40,7 +40,7 @@ final class KeychainStoreItemTests: XCTestCase {
         assertResult(result2, expectedDataType: nil, expectedError: .authenticationFailedForData)
 
         let result3 = keychain.mapStoreStatusToResult(errSecDeviceFailed)
-        assertResult(result3, expectedDataType: nil, expectedError: .failedToStoreData(Int(errSecDeviceFailed)))
+        assertResult(result3, expectedDataType: nil, expectedError: .failedToStoreData(errSecDeviceFailed.errorDescription))
     }
 
     func testLoadStatusMapping() {
@@ -51,7 +51,7 @@ final class KeychainStoreItemTests: XCTestCase {
         assertResult(result2, expectedDataType: nil, expectedError: .authenticationFailedForData)
 
         let result3 = keychain.mapLoadStatusToResult(errSecDeviceFailed, data: nil)
-        assertResult(result3, expectedDataType: nil, expectedError: .failedToLoadData(Int(errSecDeviceFailed)))
+        assertResult(result3, expectedDataType: nil, expectedError: .failedToLoadData(errSecDeviceFailed.errorDescription))
     }
 
     private func assertResult<T>(_ result: Result<T, TIMSecureStorageError>, expectedDataType: T.Type?, expectedError: TIMSecureStorageError?) {

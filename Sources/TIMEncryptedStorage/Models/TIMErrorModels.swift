@@ -79,14 +79,14 @@ public enum TIMKeyServiceError: Error, Equatable, LocalizedError {
 
 public enum TIMSecureStorageError : Error, LocalizedError, Equatable {
     /// Failed to store data
-    /// Parameter is status code responding to the SecureStorage implementation that is used.
-    /// `TIMKeychain` will report `OSStatus` values.
-    case failedToStoreData(Int?)
+    /// Parameter is custom error message from SecureStorage implementation that is used.
+    /// `TIMKeychain` will report `OSStatus` descriptions.
+    case failedToStoreData(String)
 
     /// Failed to load data
-    /// Parameter is status code responding to the SecureStorage implementation that is used.
-    /// `TIMKeychain` will report `OSStatus` values.
-    case failedToLoadData(Int?)
+    /// Parameter is custom error message from SecureStorage implementation that is used.
+    /// `TIMKeychain` will report `OSStatus` descriptions.
+    case failedToLoadData(String)
 
     /// Authentication failed for data retrieve (e.g. TouchID/FaceID)
     case authenticationFailedForData
@@ -95,10 +95,10 @@ public enum TIMSecureStorageError : Error, LocalizedError, Equatable {
         switch self {
         case .authenticationFailedForData:
             return "The authentication failed for data, e.g. the user failed to unlock or cancelled the biometric ID prompt."
-        case .failedToLoadData(let status):
-            return "Failed to load data from secure storage [\(status?.description ?? "nil")]."
-        case .failedToStoreData(let status):
-            return "Failed to store data in secure storage [\(status?.description ?? "nil")]."
+        case .failedToLoadData(let message):
+            return "Failed to load data from secure storage [\(message)]."
+        case .failedToStoreData(let message):
+            return "Failed to store data in secure storage [\(message)]."
         }
     }
 }
