@@ -96,9 +96,9 @@ public enum TIMSecureStorageError : Error, LocalizedError, Equatable {
         case .authenticationFailedForData:
             return "The authentication failed for data, e.g. the user failed to unlock or cancelled the biometric ID prompt."
         case .failedToLoadData(let message):
-            return "Failed to load data from secure storage [\(message)]."
+            return "Failed to load data from secure storage: \(message)"
         case .failedToStoreData(let message):
-            return "Failed to store data in secure storage [\(message)]."
+            return "Failed to store data in secure storage: \(message)"
         }
     }
 }
