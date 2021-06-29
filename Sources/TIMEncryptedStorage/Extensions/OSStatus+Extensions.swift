@@ -8,7 +8,7 @@ extension OSStatus {
         let codeString: String = Int(exactly: self)?.description ?? "nil"
         let codeMessage: String
         if #available(iOS 11.3, *) {
-            let osStatusString = (SecCopyErrorMessageString(errSecNoStorageModule, nil) as NSString?) as String?
+            let osStatusString = (SecCopyErrorMessageString(self, nil) as NSString?) as String?
             codeMessage = osStatusString ?? "-"
         } else {
             codeMessage = "- (not available below iOS 11.3)"
