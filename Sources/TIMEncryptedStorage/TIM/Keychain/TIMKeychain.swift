@@ -99,7 +99,7 @@ public final class TIMKeychain : TIMSecureStorage {
     func mapLoadStatusToResult(_ status: OSStatus, data: AnyObject?) -> Result<Data, TIMSecureStorageError> {
         let result: Result<Data, TIMSecureStorageError>
         switch status {
-        // `errSecInteractionNotAllowed` can occur if the app is put into the background while the biometric dialog is open.
+        // `errSecInteractionNotAllowed` can occur if the screen is locked while the biometric dialog is open.
         case errSecAuthFailed, errSecUserCanceled, errSecInteractionNotAllowed:
             result = Result.failure(.authenticationFailedForData)
         case noErr:
