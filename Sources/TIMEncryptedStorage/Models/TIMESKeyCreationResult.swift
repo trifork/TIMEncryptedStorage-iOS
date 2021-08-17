@@ -8,5 +8,11 @@ public struct TIMESKeyCreationResult {
 
     /// The longSecret, which can be used for biometric protection
     public let longSecret: String
+
+    /// Initializer
+    public init(keyId: String, longSecret: String) {
+        self.keyId = keyId
+        self.longSecret = longSecret
+    }
 }
 
