@@ -1,7 +1,6 @@
 import Foundation
 import CommonCrypto
 
-
 extension TIMESCryptor.AES {
     struct CBC {
         public enum CryptionError: Error {
