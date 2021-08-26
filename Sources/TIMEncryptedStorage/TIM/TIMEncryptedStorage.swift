@@ -106,8 +106,8 @@ public final class TIMEncryptedStorage<SecureStorage: TIMSecureStorage> {
         catch let error as TIMEncryptedStorageError {
             result = .failure(error)
         }
-        catch {
-            result = .failure(.failedToEncryptData)
+        catch let error {
+            result = .failure(.failedToEncryptData(error))
         }
         return result
     }
@@ -125,8 +125,8 @@ public final class TIMEncryptedStorage<SecureStorage: TIMSecureStorage> {
             catch let error as TIMEncryptedStorageError {
                 result = .failure(error)
             }
-            catch {
-                result = .failure(.failedToDecryptData)
+            catch let error {
+                result = .failure(.failedToDecryptData(error))
             }
         case .failure(let secureStorageError):
             result = .failure(.secureStorageFailed(secureStorageError))

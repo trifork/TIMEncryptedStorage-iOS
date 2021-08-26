@@ -12,15 +12,19 @@ extension TIMESCryptor.AES {
             if let encryptedContent = sealedData.combined {
                 return encryptedContent
             } else {
-                throw TIMEncryptedStorageError.failedToEncryptData
+                throw TIMEncryptedStorageError.failedToEncryptData(nil)
             }
         }
 
         @available(iOS 13, *)
         static func decrypt(key: Data, data: Data) throws -> Data {
             let symmetricKey = SymmetricKey(data: key)
-            let sealedBox = try CryptoKit.AES.GCM.SealedBox(combined: data)
-            return try CryptoKit.AES.GCM.open(sealedBox, using: symmetricKey)
+            do {
+                let sealedBox = try CryptoKit.AES.GCM.SealedBox(combined: data)
+                return try CryptoKit.AES.GCM.open(sealedBox, using: symmetricKey)
+            } catch let error {
+                throw TIMEncryptedStorageError.failedToDecryptData(error)
+            }
         }
     }
 }
