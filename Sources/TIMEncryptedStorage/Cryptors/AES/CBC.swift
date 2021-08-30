@@ -3,6 +3,10 @@ import CommonCrypto
 
 extension TIMESCryptor.AES {
     struct CBC {
+        public enum CryptionError: Error {
+            case failed(String)
+        }
+
         static func encrypt(key: Data, data: Data, iv: Data) throws -> Data {
             try crypt(key: key, input: data, iv: iv, operation: kCCEncrypt)
         }
@@ -44,9 +48,9 @@ extension TIMESCryptor.AES {
 
             guard status == kCCSuccess else {
                 if operation == kCCEncrypt {
-                    throw TIMEncryptedStorageError.failedToEncryptData
+                    throw TIMEncryptedStorageError.failedToEncryptData(CryptionError.failed(status.errorDescription))
                 } else {
-                    throw TIMEncryptedStorageError.failedToDecryptData
+                    throw TIMEncryptedStorageError.failedToDecryptData(CryptionError.failed(status.errorDescription))
                 }
             }
 

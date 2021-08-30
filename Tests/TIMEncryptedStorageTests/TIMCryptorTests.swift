@@ -48,5 +48,16 @@ final class TIMCryptorTests: XCTestCase {
         XCTAssertEqual(decryptedData, decryptedData2)
         XCTAssertEqual(decryptedData, decryptedData3)
     }
+
+    @available(iOS 13, *)
+    func testErrorHandling() {
+        let encryptedData = try! TIMESCryptor.AES.CBC.encrypt(key: key, data: data, iv: iv)
+        do {
+            _ = try TIMESCryptor.AES.GCM.decrypt(key: key, data: encryptedData)
+            XCTFail("This should fail.")
+        } catch let error {
+            XCTAssertEqual("Failed to decrypt data with specified key: authenticationFailure", error.localizedDescription)
+        }
+    }
 }
 

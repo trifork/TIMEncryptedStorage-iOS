@@ -4,8 +4,8 @@ import Foundation
 public enum TIMEncryptedStorageError: Error, LocalizedError {
 
     // MARK: - Encryption errors
-    case failedToEncryptData
-    case failedToDecryptData
+    case failedToEncryptData(Error?)
+    case failedToDecryptData(Error)
     case invalidEncryptionMethod
     case invalidEncryptionKey
 
@@ -21,10 +21,10 @@ public enum TIMEncryptedStorageError: Error, LocalizedError {
 
     public var errorDescription: String? {
         switch self {
-        case .failedToEncryptData:
-            return "Failed to encrypt data with specified key."
-        case .failedToDecryptData:
-            return "Failed to decrypt data with specified key."
+        case .failedToEncryptData(let error):
+            return "Failed to encrypt data with specified key: \(error?.localizedDescription ?? "nil")"
+        case .failedToDecryptData(let error):
+            return "Failed to decrypt data with specified key: \(error)"
         case .invalidEncryptionMethod:
             return "The encryption method is invalid. Did you remember to call the configure method?"
         case .invalidEncryptionKey:

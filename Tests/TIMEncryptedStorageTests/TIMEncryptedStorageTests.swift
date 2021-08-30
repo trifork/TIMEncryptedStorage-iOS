@@ -351,10 +351,10 @@ final class TIMEncryptedStorageTests: XCTestCase {
                         encryptionMethod: .aesGcm
                     )
                 } else {
-                    fatalError("This encryption method is no supported.")
+                    fatalError("This encryption method is not supported.")
                 }
             } else {
-                fatalError("This encryption method is no supported.")
+                fatalError("This encryption method is not supported.")
             }
         }
     }
