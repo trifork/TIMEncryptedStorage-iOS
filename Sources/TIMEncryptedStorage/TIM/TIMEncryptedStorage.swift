@@ -162,10 +162,10 @@ public extension TIMEncryptedStorage {
         }
     }
 
-    /// Combine wrapper for `storeViaBiometric(id:data:keyId:completion:)`
-    func storeViaBiometric(id: StorageID, data: Data, keyId: String) -> Future<Void, TIMEncryptedStorageError> {
+    /// Combine wrapper for `storeViaBiometric(id:data:keyId:willBeginNetworkRequests:completion:)`
+    func storeViaBiometric(id: StorageID, data: Data, keyId: String, willBeginNetworkRequests: TIMESWillBeginNetworkRequests? = nil) -> Future<Void, TIMEncryptedStorageError> {
         Future { promise in
-            self.storeViaBiometric(id: id, data: data, keyId: keyId, completion: { promise($0) })
+            self.storeViaBiometric(id: id, data: data, keyId: keyId, willBeginNetworkRequests: willBeginNetworkRequests, completion: { promise($0) })
         }
     }
 
@@ -183,10 +183,10 @@ public extension TIMEncryptedStorage {
         }
     }
 
-    /// Combine wrapper for `getViaBiometric(id:keyId:completion:)`
-    func getViaBiometric(id: StorageID, keyId: String) -> Future<TIMESBiometricLoadResult, TIMEncryptedStorageError> {
+    /// Combine wrapper for `getViaBiometric(id:keyId:willBeginNetworkRequests:completion:)`
+    func getViaBiometric(id: StorageID, keyId: String, willBeginNetworkRequests: TIMESWillBeginNetworkRequests? = nil) -> Future<TIMESBiometricLoadResult, TIMEncryptedStorageError> {
         Future { promise in
-            self.getViaBiometric(id: id, keyId: keyId, completion: { promise($0) })
+            self.getViaBiometric(id: id, keyId: keyId, willBeginNetworkRequests: willBeginNetworkRequests, completion: { promise($0) })
         }
     }
 
@@ -214,6 +214,9 @@ public extension TIMEncryptedStorage {
 
     /// Result value is a struct containing descrypted data and the longSecret used to load it.
     typealias TIMESBiometricLoadCompletion = (Result<TIMESBiometricLoadResult, TIMEncryptedStorageError>) -> Void
+
+    /// Result value is a struct containing descrypted data and the longSecret used to load it.
+    typealias TIMESWillBeginNetworkRequests = () -> Void
 
     /// Stores encrypted data for a keyId and secret combination.
     /// - Parameters:
@@ -282,21 +285,25 @@ public extension TIMEncryptedStorage {
     /// - Parameters:
     ///   - id: The identifier for the data, which it can be recalled from.
     ///   - data: The data to encrypt and save.
-    ///   - keyId: The identifier for the key, which can be recalled with the `longSecret` for biometric protection.
+    ///   - keyId: The identifier for the key, which can be recalled with the `longSecret` for biometric protection. This can be useful to show spinners.
+    ///   - willBeginNetworkRequests: Optional closure, which will be invoked right before network requests are initiated. Will always be invoked on main thread.
     ///   - completion: Invoked when the operation is done with a `Result`.
-    func storeViaBiometric(id: StorageID, data: Data, keyId: String, completion: @escaping TIMESStatusCompletion) {
+    func storeViaBiometric(id: StorageID, data: Data, keyId: String, willBeginNetworkRequests: TIMESWillBeginNetworkRequests? = nil, completion: @escaping TIMESStatusCompletion) {
         // 1. Load longSecret for keyId via FaceID/TouchID
         // 2. Call store(id: id, data: data, keyId: keyId, longSecret: <loadedLongSecret>)
         // 3. Return result of store function
 
         let secureStorageKey = longSecretSecureStoreId(keyId: keyId)
-        let loadResult = secureStorage.getBiometricProtected(item: SecureStorage.SecureStorageItem(id: secureStorageKey))
+        let longSecretResult = secureStorage.getBiometricProtected(item: SecureStorage.SecureStorageItem(id: secureStorageKey))
 
-        switch loadResult {
+        switch longSecretResult {
         case .failure(let secureStorageError):
             completion(.failure(.secureStorageFailed(secureStorageError)))
         case .success(let longSecretData):
             if let longSecret = String(data: longSecretData, encoding: .utf8) {
+                DispatchQueue.main.async {
+                    willBeginNetworkRequests?()
+                }
                 store(id: id, data: data, keyId: keyId, longSecret: longSecret, completion: completion)
             } else {
                 completion(.failure(.unexpectedData))
@@ -356,12 +363,13 @@ public extension TIMEncryptedStorage {
     }
 
     /// Gets and decrypts data for a keyId by loading the `longSecret` using biometric protection.
-    /// This will prompt the user for biometric verfication.
+    /// This will prompt the user for biometric verification.
     /// - Parameters:
     ///   - id: The identifier for the data, which it was saved with.
     ///   - keyId: The identifier for the key that was created with the `secret`.
+    ///   - willBeginNetworkRequests: Optional closure, which will be invoked right before network requests are initiated. Will always be invoked on main thread.
     ///   - completion: Invoked when the operation is done with a `Result` containing the loaded data and the `longSecret` that was used with the `keyId`.
-    func getViaBiometric(id: StorageID, keyId: String, completion: @escaping TIMESBiometricLoadCompletion) {
+    func getViaBiometric(id: StorageID, keyId: String, willBeginNetworkRequests: TIMESWillBeginNetworkRequests? = nil, completion: @escaping TIMESBiometricLoadCompletion) {
         // 1. Load longSecret for keyId via FaceID/TouchID
         // 2. Get encryption key with keyId + longSecret
         // 3. Load encrypted data from secure storage with id
@@ -373,6 +381,9 @@ public extension TIMEncryptedStorage {
         switch longSecretResult {
         case .success(let longSecretData):
             if let longSecret = String(data: longSecretData, encoding: .utf8) {
+                DispatchQueue.main.async {
+                    willBeginNetworkRequests?()
+                }
                 keyService.getKeyViaLongSecret(longSecret: longSecret, keyId: keyId) { (keyServerResult) in
                     let result = self.handleKeyServerResultAndDecryptData(keyServerResult: keyServerResult, id: id)
                     completion(result.map({ TIMESBiometricLoadResult(data: $0, longSecret: longSecret) }))

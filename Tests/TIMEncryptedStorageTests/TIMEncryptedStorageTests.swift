@@ -20,14 +20,14 @@ final class TIMEncryptedStorageTests: XCTestCase {
     static let secret: String = "1234"
     static let longSecret: String = "longSecret"
 
-    override class func setUp() {
-        super.setUp()
+    override func setUpWithError() throws {
+        try super.setUpWithError()
         URLSessionStubResults.reset()
-        testStore.reset()
+        Self.testStore.reset()
 
         // Configure mock key service
-        let keyModel = TIMKeyModel(keyId: keyId, key: "TWJRZVRoV21acTR0Nnc5eg==", longSecret: longSecret)
-        URLSessionStubResults.setKeyModel(baseUrl: baseUrl, endpoint: .key, keyModel: keyModel)
+        let keyModel = TIMKeyModel(keyId: Self.keyId, key: "TWJRZVRoV21acTR0Nnc5eg==", longSecret: Self.longSecret)
+        URLSessionStubResults.setKeyModel(baseUrl: Self.baseUrl, endpoint: .key, keyModel: keyModel)
     }
 
     func testHasValue() {
@@ -278,6 +278,39 @@ final class TIMEncryptedStorageTests: XCTestCase {
                 expectLoad.fulfill()
             }
             wait(for: [expectLoad], timeout: 1.0)
+        }
+    }
+
+    func testWillBeginNetworkRequestClosureForBioOperations() {
+        for method in TIMESEncryptionMethod.allCases {
+            Self.testStore.reset()
+
+            let storage = storage(method)
+            enableBio(storage: storage)
+
+            let expectBioStore = XCTestExpectation(description: "Store should have returned.")
+            let expectNetworkWillBeginStore = XCTestExpectation(description: "Will begin closure should be invoked.")
+            storage.storeViaBiometric(id: "id", data: "myData".data(using: .utf8)!, keyId: Self.keyId, willBeginNetworkRequests: { expectNetworkWillBeginStore.fulfill() }) { (result) in
+                switch result {
+                case .success:
+                    expectBioStore.fulfill()
+                case .failure(let error):
+                    XCTFail(error.localizedDescription)
+                }
+            }
+            wait(for: [expectNetworkWillBeginStore, expectBioStore], timeout: 1.0)
+
+            let expectBioLoad = XCTestExpectation(description: "Load should have returned.")
+            let expectNetworkWillBeginLoad = XCTestExpectation(description: "Will begin closure should be invoked.")
+            storage.getViaBiometric(id: "id", keyId: Self.keyId, willBeginNetworkRequests: { expectNetworkWillBeginLoad.fulfill() }) { (result) in
+                switch result {
+                case .success:
+                    expectBioLoad.fulfill()
+                case .failure(let error):
+                    XCTFail(error.localizedDescription)
+                }
+            }
+            wait(for: [expectNetworkWillBeginLoad, expectBioLoad], timeout: 1.0)
         }
     }
 
