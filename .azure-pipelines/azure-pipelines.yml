@@ -5,12 +5,15 @@ jobs:
 - job: Xcode_test
   strategy:
     maxParallel: 10
-    # matrix:
-    #   # Previous iOS versions requires previous Xcode verisons, which isn't supported by TIMEncryptedStorage
-    #   ios14:
-    #     IMAGE_NAME: 'macos-10.15'
-    #     XCODE_DEVELOPER_PATH: /Applications/Xcode_12.4.app
-    #     IOS_SIMULATORS: 'iPhone 12 mini,OS=14.4'
+    matrix:
+      # Previous iOS versions requires previous Xcode verisons, which isn't supported by TIMEncryptedStorage
+      ios15:
+        IMAGE_NAME: 'macOS-latest'
+        IOS_SIMULATORS: 'iPhone 13 Pro,OS=15.2'
+      # ios14:
+      #   IMAGE_NAME: 'macos-10.15'
+      #   XCODE_DEVELOPER_PATH: /Applications/Xcode_12.4.app
+      #   IOS_SIMULATORS: 'iPhone 12 mini,OS=14.4'
       
   pool:
     vmImage: $(IMAGE_NAME)
