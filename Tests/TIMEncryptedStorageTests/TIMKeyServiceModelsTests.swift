@@ -5,9 +5,9 @@
 //  Created by Jon Nørrelykke on 03/03/2022.
 //
 
-import XCTest
-import TIMEncryptedStorage  // Intentional in order to test public scopes
-
+//import XCTest
+//import TIMEncryptedStorage  // Intentional in order to test public scopes
+//
 //class TIMKeyModelsTests: XCTestCase {
 //
 //    func testTIMKeyModelConstructor() {
