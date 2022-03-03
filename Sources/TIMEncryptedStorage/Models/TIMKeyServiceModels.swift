@@ -45,7 +45,7 @@ public class TIMKeyModel: Codable {
     /// longSecret used as secret when logging in with biometric protection
     public let longSecret: String?
 
-    init(keyId: String, key: String, longSecret: String?) {
+    public init(keyId: String, key: String, longSecret: String?) {
         self.key = key
         self.keyId = keyId
         self.longSecret = longSecret
