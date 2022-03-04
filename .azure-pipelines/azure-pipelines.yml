@@ -7,10 +7,10 @@ jobs:
     maxParallel: 10
     matrix:
       # Previous iOS versions requires previous Xcode verisons, which isn't supported by TIMEncryptedStorage
-      ios14:
-        IMAGE_NAME: 'macos-10.15'
-        XCODE_DEVELOPER_PATH: /Applications/Xcode_12.4.app
-        IOS_SIMULATORS: 'iPhone 12 mini,OS=14.4'
+      ios15:
+        IMAGE_NAME: 'macOS-latest'
+        XCODE_DEVELOPER_PATH: /Applications/Xcode_13.2.1.app
+        IOS_SIMULATORS: 'iPhone 13 Pro,OS=15.2'
       
   pool:
     vmImage: $(IMAGE_NAME)
