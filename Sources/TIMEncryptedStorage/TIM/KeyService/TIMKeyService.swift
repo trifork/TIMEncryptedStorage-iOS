@@ -28,52 +28,77 @@ public final class TIMKeyService : TIMKeyServiceProtocol {
 
     /// The `URLSession` to perform the network requests to the Trifork Identity Manager KeyService.
     private let urlSession: URLSession
+    /// The chosen URLSessionConfiguration chosen in the initialiser, used for re-initialising the URLSession if needed.
+    private let urlSessionConfiguration: URLSessionConfiguration
+    /// The number of times a failed url request is reattempted before an error is thrown
+    private let requestRetryAttempts: Int
 
     /// Sets the configuration of the key service. This should be called before you call any other functions on this class.
     /// - Parameter configuration: The configuration.
     /// - Parameter networkSession: The `URLSession` to perform the network requests to the Trifork Identity Manager KeyService. Default is `URLSession(configuration: .ephemeral)`
-    public init(configuration: TIMKeyServiceConfiguration, urlSession: URLSession = URLSession(configuration: .ephemeral)) {
+    public init(
+        configuration: TIMKeyServiceConfiguration,
+        urlSession: URLSession = URLSession(configuration: .ephemeral),
+        requestRetryAttempts: Int = 1
+    ) {
         self.configuration = configuration
         self.urlSession = urlSession
+        self.urlSessionConfiguration = urlSession.configuration
+        self.requestRetryAttempts = requestRetryAttempts
 
         guard verifyConfiguration(configuration) else {
             fatalError("TIMKeyService configuration is invalid!")
         }
     }
 
-    private func request<T: Decodable>(_ url: URL, parameters: [String : String], completion: @escaping (Result<T, TIMKeyServiceError>) -> Void) {
-        var request = URLRequest(url: url)
-        request.httpMethod = "POST"
-        request.addValue("application/json", forHTTPHeaderField: "Content-Type")
-        request.httpBody = try? JSONEncoder().encode(parameters)
+    private func request<T: Decodable>(_ url: URL, parameters: [String: String], completion: @escaping (Result<T, TIMKeyServiceError>) -> Void) {
+        // Helper method to perform the request and handle retries
+        func performRequest(with urlSession: URLSession, retryCount: Int) {
+            var request = URLRequest(url: url)
+            request.httpMethod = "POST"
+            request.addValue("application/json", forHTTPHeaderField: "Content-Type")
+            request.httpBody = try? JSONEncoder().encode(parameters)
 
-        let task = urlSession.dataTask(with: request) { (data, response, error) in
-            guard let response = response as? HTTPURLResponse else {
-                DispatchQueue.main.async {
-                    completion(.failure(mapKeyServiceError(error)))
+            let task = urlSession.dataTask(with: request) { [weak self] (data, response, error) in
+                guard let self else { fatalError("❗️No reference to self in \(#function)") }
+                
+                guard let response = response as? HTTPURLResponse else {
+                    // Check if we can retry the request
+                    if retryCount > 0 {
+                        // Recreate the URLSession and retry the request
+                        let newSession = URLSession(configuration: self.urlSessionConfiguration)
+                        performRequest(with: newSession, retryCount: retryCount - 1)
+                    } else {
+                        // If no retries left, return the error
+                        DispatchQueue.main.async {
+                            completion(.failure(mapKeyServiceError(error)))
+                        }
+                    }
+                    return
                 }
-                return
-            }
 
-            if response.statusCode == 200,
-                let data = data {
-                if let keyModel = try? JSONDecoder().decode(T.self, from: data) {
-                    DispatchQueue.main.async {
-                        completion(.success(keyModel))
+                if response.statusCode == 200, let data = data {
+                    if let keyModel = try? JSONDecoder().decode(T.self, from: data) {
+                        DispatchQueue.main.async {
+                            completion(.success(keyModel))
+                        }
+                    } else {
+                        DispatchQueue.main.async {
+                            completion(.failure(TIMKeyServiceError.unableToDecode))
+                        }
                     }
                 } else {
                     DispatchQueue.main.async {
-                        completion(.failure(TIMKeyServiceError.unableToDecode))
+                        completion(.failure(mapKeyServiceError(withCode: response.statusCode)))
                     }
                 }
-            } else {
-                DispatchQueue.main.async {
-                    completion(.failure(mapKeyServiceError(withCode: response.statusCode)))
-                }
             }
+
+            task.resume()
         }
 
-        task.resume()
+        // Initial request attempt with the current URLSession
+        performRequest(with: urlSession, retryCount: requestRetryAttempts)
     }
 
     func keyServiceUrl(endpoint: TIMKeyServiceEndpoints) -> URL {

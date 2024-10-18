@@ -5,7 +5,7 @@ import Foundation
 public struct TIMKeychainStorageItem: TIMSecureStorageItem {
 
     public let id: String
-    private (set) var parameters: [String: Any]
+    private(set) var parameters: [String: Any]
 
     public init(id: String) {
         self.id = id
