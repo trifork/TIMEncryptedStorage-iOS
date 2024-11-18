@@ -67,6 +67,7 @@ public final class TIMKeyService : TIMKeyServiceProtocol {
                     if retryCount > 0 {
                         // Recreate the URLSession and retry the request
                         let newSession = URLSession(configuration: self.urlSessionConfiguration)
+                        print("⚠️ TIMEncryptedStorage: Created a new URLSession to retry the request")
                         performRequest(with: newSession, retryCount: retryCount - 1)
                     } else {
                         // If no retries left, return the error
